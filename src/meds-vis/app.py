@@ -9,15 +9,11 @@ from cache_results import cache_results
 
 
 def run_app(file_path):
-    app = Dash()
+    app = Dash(__name__, suppress_callback_exceptions=True)
     app.title = "MEDS INSPECT"
 
     top_n = 100  # Adjust this value to change the number of top codes to cache
     code_count_years, code_count_subject, top_codes = cache_results(file_path, top_n)
-
-    fig_code_count_years = px.histogram(code_count_years, x="time_str", y="count", nbins=len(code_count_years))
-    fig_code_count_subject = px.histogram(code_count_subject, y="subject_id", x="count")
-    fig_top_codes = px.bar(top_codes, x="count", y="code", orientation="h")
 
     # Get unique patient IDs and codes
     patient_ids = code_count_subject['subject_id'].unique().to_list()
@@ -30,45 +26,77 @@ def run_app(file_path):
         ),
         html.H1(children='MEDS INSPECT 🔎', style={'textAlign': 'center'}),
 
-        html.H2(children='Code count over the years'),
-        dcc.Graph(
-            id='fig_code_count_years',
-            figure=fig_code_count_years,
-            style={'width': '90hh', 'height': '50vh'}
-        ),
-        html.H2(children='Code count per patient'),
-        dcc.Graph(
-            id='fig_code_count_subject',
-            figure=fig_code_count_subject,
-            style={'width': '90hh', 'height': '50vh'}
-        ),
-        html.H2(children=f'Top {top_n} most frequent codes'),
-        dcc.Graph(
-            id='fig_top_codes',
-            figure=fig_top_codes,
-            style={'width': '90hh', 'height': '90vh'}
-        ),
-        html.H2(children='Codes over time for a single patient'),
-        dcc.Dropdown(
-            id='patient-dropdown',
-            options=[{'label': pid, 'value': pid} for pid in patient_ids],
-            placeholder='Select a patient ID'
-        ),
-        dcc.Graph(
-            id='fig_patient_codes',
-            style={'width': '90hh', 'height': '50vh'}
-        ),
-        html.H2(children='Numerical distribution for a single code'),
-        dcc.Dropdown(
-            id='code-dropdown',
-            options=[{'label': code, 'value': code} for code in codes],
-            placeholder='Select a code'
-        ),
-        dcc.Graph(
-            id='fig_code_distribution',
-            style={'width': '90hh', 'height': '50vh'}
-        ),
+        dcc.Tabs(id='tabs', value='tab-1', children=[
+            dcc.Tab(label='Code count over the years', value='tab-1'),
+            dcc.Tab(label='Code count per patient', value='tab-2'),
+            dcc.Tab(label=f'Top {top_n} most frequent codes', value='tab-3'),
+            dcc.Tab(label='Codes over time for a single patient', value='tab-4'),
+            dcc.Tab(label='Numerical distribution for a single code', value='tab-5'),
+        ]),
+        html.Div(id='tabs-content')
     ], style={'fontFamily': 'Arial'})
+
+    @app.callback(
+        Output('tabs-content', 'children'),
+        Input('tabs', 'value')
+    )
+    def render_content(tab):
+        if tab == 'tab-1':
+            fig_code_count_years = px.histogram(code_count_years, x="time_str", y="count", nbins=len(code_count_years))
+            return html.Div([
+                html.H2(children='Code count over the years'),
+                dcc.Graph(
+                    id='fig_code_count_years',
+                    figure=fig_code_count_years,
+                    style={'width': '90hh', 'height': '50vh'}
+                )
+            ])
+        elif tab == 'tab-2':
+            fig_code_count_subject = px.histogram(code_count_subject, y="subject_id", x="count")
+            return html.Div([
+                html.H2(children='Code count per patient'),
+                dcc.Graph(
+                    id='fig_code_count_subject',
+                    figure=fig_code_count_subject,
+                    style={'width': '90hh', 'height': '50vh'}
+                )
+            ])
+        elif tab == 'tab-3':
+            fig_top_codes = px.bar(top_codes, x="count", y="code", orientation="h")
+            return html.Div([
+                html.H2(children=f'Top {top_n} most frequent codes'),
+                dcc.Graph(
+                    id='fig_top_codes',
+                    figure=fig_top_codes,
+                    style={'width': '90hh', 'height': '90vh'}
+                )
+            ])
+        elif tab == 'tab-4':
+            return html.Div([
+                html.H2(children='Codes over time for a single patient'),
+                dcc.Dropdown(
+                    id='patient-dropdown',
+                    options=[{'label': pid, 'value': pid} for pid in patient_ids],
+                    placeholder='Select a patient ID'
+                ),
+                dcc.Graph(
+                    id='fig_patient_codes',
+                    style={'width': '90hh', 'height': '50vh'}
+                )
+            ])
+        elif tab == 'tab-5':
+            return html.Div([
+                html.H2(children='Numerical distribution for a single code'),
+                dcc.Dropdown(
+                    id='code-dropdown',
+                    options=[{'label': code, 'value': code} for code in codes],
+                    placeholder='Select a code'
+                ),
+                dcc.Graph(
+                    id='fig_code_distribution',
+                    style={'width': '90hh', 'height': '50vh'}
+                )
+            ])
 
     @app.callback(
         Output('fig_patient_codes', 'figure'),
@@ -109,6 +137,7 @@ def run_app(file_path):
 
         if code_data.is_empty():
             return {}
+
         # Calculate IQR and boundaries
         q1 = code_data['numeric_value'].quantile(0.25)
         q3 = code_data['numeric_value'].quantile(0.75)
@@ -127,8 +156,6 @@ def run_app(file_path):
             range_x=[lower_bound, upper_bound],
             nbins=num_bins
         )
-        return fig_code_distribution
-        # fig_code_distribution = px.histogram(code_data, x="numeric_value", title=f"Numerical distribution for code {code}")
         return fig_code_distribution
 
     app.run(debug=True)

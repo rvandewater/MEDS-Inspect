@@ -1,50 +1,83 @@
-# Run this app with `python app.py` and
-# visit http://127.0.0.1:8050/ in your web browser.
-
-
-from dash import Dash, html, dcc
-import plotly.express as px
-import pandas as pd
+import os
+from pathlib import Path
 import polars as pl
+from dash import Dash, html, dcc, Input, Output
+import plotly.express as px
+from cache_results import cache_results
 
-app = Dash()
 
-# assume you have a "long-form" data frame
-# see https://plotly.com/python/px-arguments/ for more options
-# df = pl.scan_parquet("/Users/robin/Documents/datasets/meds/northwestern/data/train").select(pl.col("time").hist()).collect()
-file_path = "/sc/arion/projects/hpims-hpi/projects/foundation_models_ehr/cohorts/meds/full_omop_source_concept_25_1_6/data"
-# Create a lazyframe, convert the 'time' column to a datetime type, format it to year-month, convert to string, and calculate the histogram
-df = (
-    pl.scan_parquet(file_path)
-    .filter((pl.col("time") >= pl.datetime(2000, 1, 1)) & (pl.col("time") <= pl.datetime(2025, 12, 31)))
-    .with_columns(pl.col("time").dt.strftime("%Y-%m").cast(pl.String).alias("time_str"))
-    .group_by("time_str")
-    .agg(pl.count("time_str").alias("count"))
-    .collect()
-)
-    #pd.DataFrame({
-#     "Fruit": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
-#     "Amount": [4, 1, 2, 2, 4, 5],
-#     "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"]
-# }))
+def run_app(file_path):
+    app = Dash()
 
-fig = px.histogram(df, x="time_str", y="count", nbins=len(df))
+    top_n = 100  # Adjust this value to change the number of top codes to cache
+    code_count_years, code_count_subject, top_codes = cache_results(file_path, top_n)
 
-#bar(df, x="Fruit", y="Amount", color="City", barmode="group")
+    fig_code_count_years = px.histogram(code_count_years, x="time_str", y="count", nbins=len(code_count_years))
+    fig_code_count_subject = px.histogram(code_count_subject, y="subject_id", x="count")
+    fig_top_codes = px.bar(top_codes, x="count", y="code", orientation="h")
 
-app.layout = html.Div(children=[
-    html.H1(children='MEDS INSPECT'),
+    # Get unique patient IDs
+    patient_ids = code_count_subject['subject_id'].unique().to_list()
 
-    html.Div(children='''
-        Code count over the years
-    '''),
+    app.layout = html.Div(children=[
+        html.H1(children='MEDS INSPECT'),
 
-    dcc.Graph(
-        id='example-graph',
-        figure=fig,
-        style={'width': '90hh', 'height': '90vh'}
+        html.H2(children='Code count over the years'),
+        dcc.Graph(
+            id='fig_code_count_years',
+            figure=fig_code_count_years,
+            style={'width': '90hh', 'height': '90vh'}
+        ),
+        html.H2(children='Code count per patient'),
+        dcc.Graph(
+            id='fig_code_count_subject',
+            figure=fig_code_count_subject,
+            style={'width': '90hh', 'height': '90vh'}
+        ),
+        html.H2(children=f'Top {top_n} most frequent codes'),
+        dcc.Graph(
+            id='fig_top_codes',
+            figure=fig_top_codes,
+            style={'width': '90hh', 'height': '90vh'}
+        ),
+        html.H2(children='Codes over time for a single patient'),
+        dcc.Dropdown(
+            id='patient-dropdown',
+            options=[{'label': pid, 'value': pid} for pid in patient_ids],
+            placeholder='Select a patient ID'
+        ),
+        dcc.Graph(
+            id='fig_patient_codes',
+            style={'width': '90hh', 'height': '90vh'}
+        ),
+    ], style={'fontFamily': 'Arial'})
+
+    @app.callback(
+        Output('fig_patient_codes', 'figure'),
+        Input('patient-dropdown', 'value')
     )
-])
+    def update_patient_codes(patient_id):
+        if patient_id is None:
+            return {}
 
-if __name__ == '__main__':
+        patient_data = (
+            pl.scan_parquet(Path(file_path) / "data/*/*.parquet")
+            .filter(pl.col("subject_id") == patient_id)
+            .select(pl.col("time"), pl.col("code"))
+            .collect()
+        )
+
+        if patient_data.is_empty():
+            return {}
+
+        fig_patient_codes = px.scatter(patient_data, x="time", y="code",
+                                       title=f"Codes over time for patient {patient_id}")
+        return fig_patient_codes
+
     app.run(debug=True)
+
+
+# Example usage
+if __name__ == '__main__':
+    file_path = "/Users/robin/Documents/datasets/meds/northwestern/"
+    run_app(file_path)

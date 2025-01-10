@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+
+import numpy as np
 import polars as pl
 from dash import Dash, html, dcc, Input, Output
 import plotly.express as px
@@ -8,6 +10,7 @@ from cache_results import cache_results
 
 def run_app(file_path):
     app = Dash()
+    app.title = "MEDS INSPECT"
 
     top_n = 100  # Adjust this value to change the number of top codes to cache
     code_count_years, code_count_subject, top_codes = cache_results(file_path, top_n)
@@ -16,23 +19,28 @@ def run_app(file_path):
     fig_code_count_subject = px.histogram(code_count_subject, y="subject_id", x="count")
     fig_top_codes = px.bar(top_codes, x="count", y="code", orientation="h")
 
-    # Get unique patient IDs
+    # Get unique patient IDs and codes
     patient_ids = code_count_subject['subject_id'].unique().to_list()
+    codes = top_codes['code'].unique().to_list()
 
     app.layout = html.Div(children=[
-        html.H1(children='MEDS INSPECT'),
+        html.Div(
+            children=html.Img(src='https://github.com/Medical-Event-Data-Standard/medical-event-data-standard.github.io/raw/main/static/img/logo.svg', style={'width': '200px'}),
+            style={'textAlign': 'center'}
+        ),
+        html.H1(children='MEDS INSPECT 🔎', style={'textAlign': 'center'}),
 
         html.H2(children='Code count over the years'),
         dcc.Graph(
             id='fig_code_count_years',
             figure=fig_code_count_years,
-            style={'width': '90hh', 'height': '90vh'}
+            style={'width': '90hh', 'height': '50vh'}
         ),
         html.H2(children='Code count per patient'),
         dcc.Graph(
             id='fig_code_count_subject',
             figure=fig_code_count_subject,
-            style={'width': '90hh', 'height': '90vh'}
+            style={'width': '90hh', 'height': '50vh'}
         ),
         html.H2(children=f'Top {top_n} most frequent codes'),
         dcc.Graph(
@@ -48,7 +56,17 @@ def run_app(file_path):
         ),
         dcc.Graph(
             id='fig_patient_codes',
-            style={'width': '90hh', 'height': '90vh'}
+            style={'width': '90hh', 'height': '50vh'}
+        ),
+        html.H2(children='Numerical distribution for a single code'),
+        dcc.Dropdown(
+            id='code-dropdown',
+            options=[{'label': code, 'value': code} for code in codes],
+            placeholder='Select a code'
+        ),
+        dcc.Graph(
+            id='fig_code_distribution',
+            style={'width': '90hh', 'height': '50vh'}
         ),
     ], style={'fontFamily': 'Arial'})
 
@@ -73,6 +91,45 @@ def run_app(file_path):
         fig_patient_codes = px.scatter(patient_data, x="time", y="code",
                                        title=f"Codes over time for patient {patient_id}")
         return fig_patient_codes
+
+    @app.callback(
+        Output('fig_code_distribution', 'figure'),
+        Input('code-dropdown', 'value')
+    )
+    def update_code_distribution(code):
+        if code is None:
+            return {}
+
+        code_data = (
+            pl.scan_parquet(Path(file_path) / "data/*/*.parquet")
+            .filter((pl.col("code") == code) & (pl.col("numeric_value").is_not_null()))
+            .select(pl.col("numeric_value"))
+            .collect()
+        )
+
+        if code_data.is_empty():
+            return {}
+        # Calculate IQR and boundaries
+        q1 = code_data['numeric_value'].quantile(0.25)
+        q3 = code_data['numeric_value'].quantile(0.75)
+        iqr = q3 - q1
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+
+        # Calculate the number of bins using the Freedman-Diaconis rule
+        bin_width = 2 * iqr / np.cbrt(len(code_data))
+        num_bins = int((upper_bound - lower_bound) / bin_width)
+
+        fig_code_distribution = px.histogram(
+            code_data,
+            x="numeric_value",
+            title=f"Numerical distribution for code {code}",
+            range_x=[lower_bound, upper_bound],
+            nbins=num_bins
+        )
+        return fig_code_distribution
+        # fig_code_distribution = px.histogram(code_data, x="numeric_value", title=f"Numerical distribution for code {code}")
+        return fig_code_distribution
 
     app.run(debug=True)
 

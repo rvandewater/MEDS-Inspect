@@ -3,17 +3,17 @@ from pathlib import Path
 
 import numpy as np
 import polars as pl
-from dash import Dash, html, dcc, Input, Output
+from dash import Dash, html, dcc, Input, Output, State
 import plotly.express as px
 from cache_results import cache_results
-
+from code_search import load_code_metadata, search_codes
 
 def run_app(file_path):
     app = Dash(__name__, suppress_callback_exceptions=True)
     app.title = "MEDS INSPECT"
 
-    top_n = 100  # Adjust this value to change the number of top codes to cache
-    code_count_years, code_count_subject, top_codes = cache_results(file_path, top_n)
+    code_count_years, code_count_subject, top_codes = cache_results(file_path)
+    code_metadata = load_code_metadata(file_path + "metadata/codes.parquet")
 
     # Get unique patient IDs and codes
     patient_ids = code_count_subject['subject_id'].unique().to_list()
@@ -25,13 +25,14 @@ def run_app(file_path):
             style={'textAlign': 'center'}
         ),
         html.H1(children='MEDS INSPECT 🔎', style={'textAlign': 'center'}),
-
+        html.P(children='Explore and visualize your Medical Event Data Standard (MEDS) data.', style={'textAlign': 'center'}),
         dcc.Tabs(id='tabs', value='tab-1', children=[
             dcc.Tab(label='Code count over the years', value='tab-1'),
             dcc.Tab(label='Code count per patient', value='tab-2'),
-            dcc.Tab(label=f'Top {top_n} most frequent codes', value='tab-3'),
+            dcc.Tab(label='Top most frequent codes', value='tab-3'),
             dcc.Tab(label='Codes over time for a single patient', value='tab-4'),
             dcc.Tab(label='Numerical distribution for a single code', value='tab-5'),
+            dcc.Tab(label='Code Search', value='tab-6'),
         ]),
         html.Div(id='tabs-content')
     ], style={'fontFamily': 'Arial'})
@@ -62,12 +63,22 @@ def run_app(file_path):
                 )
             ])
         elif tab == 'tab-3':
-            fig_top_codes = px.bar(top_codes, x="count", y="code", orientation="h")
             return html.Div([
-                html.H2(children=f'Top {top_n} most frequent codes'),
+                html.H2(children='Top most frequent codes'),
+                dcc.Dropdown(
+                    id='top-n-dropdown',
+                    options=[
+                        {'label': 'Top 10', 'value': 10},
+                        {'label': 'Top 50', 'value': 50},
+                        {'label': 'Top 100', 'value': 100},
+                        {'label': 'Top 250', 'value': 250},
+                        {'label': 'Top 500', 'value': 500}
+                    ],
+                    value=100,
+                    placeholder='Select top N codes'
+                ),
                 dcc.Graph(
                     id='fig_top_codes',
-                    figure=fig_top_codes,
                     style={'width': '90hh', 'height': '90vh'}
                 )
             ])
@@ -97,6 +108,65 @@ def run_app(file_path):
                     style={'width': '90hh', 'height': '50vh'}
                 )
             ])
+        elif tab == 'tab-6':
+            return html.Div([
+                html.H2(children='Code Search'),
+                dcc.Input(id='search-term', type='text', placeholder='Enter code or description', n_submit=0),
+                dcc.Dropdown(
+                    id='search-options',
+                    options=[
+                        {'label': 'Code', 'value': 'code'},
+                        {'label': 'Description', 'value': 'description'},
+                        {'label': 'Parent Code', 'value': 'parent_codes'}
+                    ],
+                    value=['code', 'description', 'parent_codes'],
+                    multi=True,
+                    placeholder='Select search fields'
+                ),
+                html.Button('Search', id='search-button'),
+                html.Div(id='search-results')
+            ])
+
+    @app.callback(
+        Output('search-results', 'children'),
+        Input('search-button', 'n_clicks'),
+        Input('search-term', 'n_submit'),
+        State('search-term', 'value'),
+        State('search-options', 'value')
+    )
+    def update_search_results(n_clicks, n_submit, search_term, search_options):
+        if (n_clicks is None and n_submit == 0) or not search_term:
+            return "Enter a search term to find codes."
+
+        results = search_codes(code_metadata, search_term, search_options)
+        if len(results) == 0:
+            return "No results found."
+
+        return html.Table([
+            html.Thead(html.Tr([html.Th(col) for col in results.columns])),
+            html.Tbody([
+                html.Tr([html.Td(results[col].to_list()[i]) for col in results.columns])
+                for i in range(len(results))
+            ])
+        ])
+
+    @app.callback(
+        Output('fig_top_codes', 'figure'),
+        Input('top-n-dropdown', 'value')
+    )
+    def update_top_codes(top_n):
+        top_codes = (
+            pl.scan_parquet(Path(file_path) / "data/*/*.parquet")
+            .group_by("code")
+            .agg(pl.count("code").alias("count"))
+            .sort("count", descending=True)
+            .limit(top_n)
+            .collect()
+        )
+
+        fig_top_codes = px.bar(top_codes, x="count", y="code", orientation="h",
+                               title=f"Top {top_n} most frequent codes")
+        return fig_top_codes
 
     @app.callback(
         Output('fig_patient_codes', 'figure'),
@@ -159,7 +229,6 @@ def run_app(file_path):
         return fig_code_distribution
 
     app.run(debug=True)
-
 
 # Example usage
 if __name__ == '__main__':

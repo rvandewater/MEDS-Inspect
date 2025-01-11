@@ -3,12 +3,12 @@ from pathlib import Path
 
 import polars as pl
 
-def cache_results(file_path, top_n):
+def cache_results(file_path):
     cache_dir = Path(file_path) / "cache"
 
     print("file_path", file_path)
     data = pl.scan_parquet(Path(file_path) / "data/*/*.parquet" )
-    print("Columns in the file:", data.columns)
+    print("Columns in the file:", data.collect_schema().names())
     # Create the cache directory if it does not exist
     cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -42,7 +42,7 @@ def cache_results(file_path, top_n):
             .collect()
         )
         code_count_subjects.write_parquet(code_count_subjects_path)
-    top_codes_path = cache_dir / f"top_{top_n}_codes.parquet"
+    top_codes_path = cache_dir / f"top_codes.parquet"
     if top_codes_path.exists():
         # Load the cached results
         top_codes = pl.read_parquet(top_codes_path)
@@ -53,7 +53,6 @@ def cache_results(file_path, top_n):
             .group_by("code")
             .agg(pl.count("code").alias("count"))
             .sort("count", descending=True)
-            .limit(top_n)
             .collect()
         )
     return code_count_years, code_count_subjects, top_codes

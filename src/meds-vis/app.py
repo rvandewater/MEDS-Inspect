@@ -8,6 +8,7 @@ import plotly.express as px
 from cache_results import cache_results
 from code_search import load_code_metadata, search_codes
 
+
 def run_app(file_path):
     app = Dash(__name__, suppress_callback_exceptions=True)
     app.title = "MEDS INSPECT"
@@ -21,47 +22,64 @@ def run_app(file_path):
 
     app.layout = html.Div(children=[
         html.Div(
-            children=html.Img(src='https://github.com/Medical-Event-Data-Standard/medical-event-data-standard.github.io/raw/main/static/img/logo.svg', style={'width': '200px'}),
+            children=html.Img(
+                src='https://github.com/Medical-Event-Data-Standard/medical-event-data-standard.github.io/raw/main/static/img/logo.svg',
+                style={'width': '200px'}),
             style={'textAlign': 'center'}
         ),
         html.H1(children='MEDS INSPECT 🔎', style={'textAlign': 'center'}),
-        html.P(children='Explore and visualize your Medical Event Data Standard (MEDS) data.', style={'textAlign': 'center'}),
+        html.P(children='Explore and visualize your Medical Event Data Standard (MEDS) data.',
+               style={'textAlign': 'center'}),
         dcc.Tabs(id='tabs', value='tab-1', children=[
-            dcc.Tab(label='Code count over the years', value='tab-1'),
-            dcc.Tab(label='Code count per patient', value='tab-2'),
-            dcc.Tab(label='Top most frequent codes', value='tab-3'),
-            dcc.Tab(label='Codes over time for a single patient', value='tab-4'),
-            dcc.Tab(label='Numerical distribution for a single code', value='tab-5'),
-            dcc.Tab(label='Code Search', value='tab-6'),
+            dcc.Tab(label='📅 Code count over time', value='tab-1'),
+            dcc.Tab(label='👤 Code count per patient', value='tab-2'),
+            dcc.Tab(label='🏆 Top most frequent codes', value='tab-3'),
+            dcc.Tab(label='🕒 Codes over time for a single patient', value='tab-4'),
+            dcc.Tab(label='📊 Numerical distribution for a single code', value='tab-5'),
+            dcc.Tab(label='🔍 Code Search', value='tab-6'),
         ]),
-        html.Div(id='tabs-content')
-    ], style={'fontFamily': 'Arial'})
+        dcc.Loading(
+            id='loading-tabs-content',
+            type='default',
+            children=html.Div(id='tabs-content')
+        )
+    ], style={'fontFamily': 'Helvetica', 'marginLeft': '30px', 'marginRight': '30px'})
 
     @app.callback(
         Output('tabs-content', 'children'),
         Input('tabs', 'value')
     )
     def render_content(tab):
+        content_style = {'border': '2px solid #007BFF', 'padding': '10px', 'borderRadius': '5px'}
+
         if tab == 'tab-1':
             fig_code_count_years = px.histogram(code_count_years, x="time_str", y="count", nbins=len(code_count_years))
             return html.Div([
                 html.H2(children='Code count over the years'),
-                dcc.Graph(
-                    id='fig_code_count_years',
-                    figure=fig_code_count_years,
-                    style={'width': '90hh', 'height': '50vh'}
+                dcc.Loading(
+                    id='loading-fig-code-count-years',
+                    type='default',
+                    children=dcc.Graph(
+                        id='fig_code_count_years',
+                        figure=fig_code_count_years,
+                        style={'width': '90hh', 'height': '50vh'}
+                    )
                 )
-            ])
+            ], style=content_style)
         elif tab == 'tab-2':
             fig_code_count_subject = px.histogram(code_count_subject, y="subject_id", x="count")
             return html.Div([
                 html.H2(children='Code count per patient'),
-                dcc.Graph(
-                    id='fig_code_count_subject',
-                    figure=fig_code_count_subject,
-                    style={'width': '90hh', 'height': '50vh'}
+                dcc.Loading(
+                    id='loading-fig-code-count-subject',
+                    type='default',
+                    children=dcc.Graph(
+                        id='fig_code_count_subject',
+                        figure=fig_code_count_subject,
+                        style={'width': '90hh', 'height': '50vh'}
+                    )
                 )
-            ])
+            ], style=content_style)
         elif tab == 'tab-3':
             return html.Div([
                 html.H2(children='Top most frequent codes'),
@@ -77,11 +95,15 @@ def run_app(file_path):
                     value=100,
                     placeholder='Select top N codes'
                 ),
-                dcc.Graph(
-                    id='fig_top_codes',
-                    style={'width': '90hh', 'height': '90vh'}
+                dcc.Loading(
+                    id='loading-fig-top-codes',
+                    type='default',
+                    children=dcc.Graph(
+                        id='fig_top_codes',
+                        style={'width': '90hh', 'height': '90vh'}
+                    )
                 )
-            ])
+            ], style=content_style)
         elif tab == 'tab-4':
             return html.Div([
                 html.H2(children='Codes over time for a single patient'),
@@ -90,11 +112,15 @@ def run_app(file_path):
                     options=[{'label': pid, 'value': pid} for pid in patient_ids],
                     placeholder='Select a patient ID'
                 ),
-                dcc.Graph(
-                    id='fig_patient_codes',
-                    style={'width': '90hh', 'height': '50vh'}
+                dcc.Loading(
+                    id='loading-fig-patient-codes',
+                    type='default',
+                    children=dcc.Graph(
+                        id='fig_patient_codes',
+                        style={'width': '90hh', 'height': '50vh'}
+                    )
                 )
-            ])
+            ], style=content_style)
         elif tab == 'tab-5':
             return html.Div([
                 html.H2(children='Numerical distribution for a single code'),
@@ -103,11 +129,15 @@ def run_app(file_path):
                     options=[{'label': code, 'value': code} for code in codes],
                     placeholder='Select a code'
                 ),
-                dcc.Graph(
-                    id='fig_code_distribution',
-                    style={'width': '90hh', 'height': '50vh'}
+                dcc.Loading(
+                    id='loading-fig-code-distribution',
+                    type='default',
+                    children=dcc.Graph(
+                        id='fig_code_distribution',
+                        style={'width': '90hh', 'height': '50vh'}
+                    )
                 )
-            ])
+            ], style=content_style)
         elif tab == 'tab-6':
             return html.Div([
                 html.H2(children='Code Search'),
@@ -124,8 +154,12 @@ def run_app(file_path):
                     placeholder='Select search fields'
                 ),
                 html.Button('Search', id='search-button'),
-                html.Div(id='search-results')
-            ])
+                dcc.Loading(
+                    id='loading-search-results',
+                    type='default',
+                    children=html.Div(id='search-results')
+                )
+            ], style=content_style)
 
     @app.callback(
         Output('search-results', 'children'),
@@ -142,13 +176,16 @@ def run_app(file_path):
         if len(results) == 0:
             return "No results found."
 
-        return html.Table([
+
+        return [html.Tbody([f"Found {len(results)} results" if len(results) < 1000
+                            else "Showing first 1000 results found. Please refine search"]),
+html.Table([
             html.Thead(html.Tr([html.Th(col) for col in results.columns])),
             html.Tbody([
                 html.Tr([html.Td(results[col].to_list()[i]) for col in results.columns])
                 for i in range(len(results))
             ])
-        ])
+        ])]
 
     @app.callback(
         Output('fig_top_codes', 'figure'),
@@ -229,6 +266,7 @@ def run_app(file_path):
         return fig_code_distribution
 
     app.run(debug=True)
+
 
 # Example usage
 if __name__ == '__main__':

@@ -23,6 +23,7 @@ def search_codes(metadata, search_term, search_options):
         metadata.lazy()
         .filter(combined_filter)
         .select(["code", "description", "parent_codes"])
+        .limit(1000)
         .collect()
     )
     return result

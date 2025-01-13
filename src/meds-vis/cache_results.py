@@ -40,10 +40,10 @@ def cache_results(file_path):
         # Compute the results and save to cache
         code_count_years = (
             data
-            .filter((pl.col("time") >= pl.datetime(2000, 1, 1)) & (pl.col("time") <= pl.datetime(2025, 12, 31)))
-            .with_columns(pl.col("time").dt.strftime("%Y-%m").cast(pl.String).alias("time_str"))
-            .group_by("time_str")
-            .agg(pl.count("time_str").alias("count"))
+            # .filter((pl.col("time") >= pl.datetime(2000, 1, 1)) & (pl.col("time") <= pl.datetime(2025, 12, 31)))
+            .with_columns(pl.col("time").dt.strftime("%Y-%m").cast(pl.String).alias("Month/Year"))
+            .group_by("Month/Year")
+            .agg(pl.count("Month/Year").alias("Amount of codes"))
         )
         code_count_years.sink_parquet(code_count_years_path)
 

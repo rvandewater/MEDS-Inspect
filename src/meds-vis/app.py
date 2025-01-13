@@ -135,7 +135,7 @@ def run_app(file_path=None):
         content_style = {'border': '2px solid #007BFF', 'padding': '10px', 'borderRadius': '5px'}
 
         if tab == 'tab-1':
-            fig_code_count_years = px.histogram(code_count_years, x="time_str", y="count", nbins=len(code_count_years))
+            fig_code_count_years = px.histogram(code_count_years, x="Month/Year", y="Amount of codes", nbins=len(code_count_years))
             return html.Div([
                 html.H2(children='Code count over the years'),
                 dcc.Loading(

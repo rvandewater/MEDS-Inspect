@@ -15,9 +15,6 @@ from utils import get_folder_size, is_valid_path
 cached_results = None
 
 
-
-
-
 def run_app(file_path=None):
     global cached_results
 
@@ -26,7 +23,7 @@ def run_app(file_path=None):
 
     app = Dash(__name__, suppress_callback_exceptions=True)
     app.title = "MEDS INSPECT"
-
+    server = app.server
     app.layout = html.Div(children=[
         html.Div(
             children=html.Img(

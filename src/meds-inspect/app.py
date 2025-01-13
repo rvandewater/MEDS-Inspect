@@ -57,7 +57,7 @@ def run_app(file_path=None):
                 style={'width': '200px'}),
             style={'textAlign': 'center'}
         ),
-        html.H1(children='MEDS INSPECT 🔎', style={'textAlign': 'center'}),
+        html.H1(children='MEDS INSPECT 🕵️', style={'textAlign': 'center'}),
         html.P(children='Explore and visualize your Medical Event Data Standard (MEDS) data.',
                style={'textAlign': 'center', 'fontSize': '20px'}),
         dcc.Input(id='hidden-file-path', type='hidden', value=file_path,

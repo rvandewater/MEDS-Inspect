@@ -1,3 +1,2 @@
 polars==1.19.0
-meds_reader==0.1.9
 dash==2.18.2

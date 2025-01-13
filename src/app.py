@@ -1,7 +1,6 @@
 import logging
 import os
 from pathlib import Path
-import asyncio
 
 import numpy as np
 import polars as pl

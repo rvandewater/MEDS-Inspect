@@ -95,7 +95,7 @@ def cache_results(file_path):
         # Compute the results and save to cache
         coding_dict = (
             data
-            .with_columns(pl.col("code").str.split("//").list.first().alias("coding_dict"))
+            .with_columns(pl.col("code").str.split("/").list.first().alias("coding_dict"))
             .group_by("coding_dict")
             .agg(pl.count("coding_dict").alias("count"))
             .sort("count", descending=True)

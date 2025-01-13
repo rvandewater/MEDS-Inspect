@@ -1,6 +1,9 @@
 import logging
 from pathlib import Path
 import polars as pl
+import argparse
+
+
 
 def cache_results(file_path):
     cache_dir = Path(file_path) / ".meds_inspect_cache"
@@ -92,3 +95,15 @@ def cache_results(file_path):
 
     logging.info(f"Saved cache to: {cache_dir}")
     return code_count_years, code_count_subjects, top_codes, coding_dict
+
+def main():
+    parser = argparse.ArgumentParser(description='Run cache_results with a specified file path.')
+    parser.add_argument('file_path', type=str, help='The path to the MEDS data folder')
+    args = parser.parse_args()
+
+    file_path = args.file_path
+
+    cache_results(file_path)
+
+if __name__ == '__main__':
+    main()

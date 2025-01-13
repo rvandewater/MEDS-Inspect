@@ -12,27 +12,24 @@ But after building your own MEDS ETL you might be wondering:
 MEDS-Inspect is an interactive data visualization app that supports you in your data quest.
 
 ## Getting started
-
-``
+Clone repository:
+``` bash
 git clone https://github.com/rvandewater/MEDS-Inspect.git
 cd MEDS-Inspect
-``
-
-``
+```
+Create environment:
+```` bash
 conda create -n "meds-inspect" python=3.12  
-``
-
-``
 conda activate meds-inspect
-``
-
-``
+````
+Install requirements:
+```` bash
 pip install -r requirements.txt
-``
-
-``
+````
+Launch app:
+```` bash
 python src/meds-inspect/app.py
-``
+````
 This should start a locally hosted web app
 
 Impression:

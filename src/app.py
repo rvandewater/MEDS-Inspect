@@ -12,6 +12,8 @@ from utils import get_folder_size, is_valid_path
 
 # Global variable to store cached results
 cached_results = None
+app = Dash(__name__, suppress_callback_exceptions=True)
+server = app.server
 
 
 def run_app(file_path=None):
@@ -19,10 +21,8 @@ def run_app(file_path=None):
 
     if file_path and is_valid_path(file_path):
         cached_results = cache_results(file_path)
-
-    app = Dash(__name__, suppress_callback_exceptions=True)
+    app.run_server(debug=True)
     app.title = "MEDS INSPECT"
-    server = app.server
     app.layout = html.Div(children=[
         html.Div(
             children=html.Img(

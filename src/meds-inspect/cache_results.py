@@ -2,13 +2,15 @@ import logging
 from pathlib import Path
 import polars as pl
 import argparse
-
+from utils import get_folder_size, is_valid_path
 
 
 def cache_results(file_path):
     cache_dir = Path(file_path) / ".meds_inspect_cache"
-    logging.info(f"Running cache_results on {file_path}")
-
+    logging.info(f"Attempting to load cached results on {file_path}")
+    if not is_valid_path(file_path):
+        logging.error(f"Invalid path: {file_path}")
+        return None
     # Check if all cached files exist
     code_count_years_path = cache_dir / "code_count_years.parquet"
     code_count_subjects_path = cache_dir / "code_count_subjects.parquet"
@@ -28,7 +30,24 @@ def cache_results(file_path):
         return code_count_years, code_count_subjects, top_codes, coding_dict
 
     logging.info(f"Running cache_results on {file_path}")
-    data = pl.scan_parquet(Path(file_path) / "data/*/*.parquet")
+    folder_size = get_folder_size(file_path)
+    size_in_mb = folder_size / (1024 * 1024)
+    logging.info(f'(Size: {size_in_mb:.2f} MB)')
+
+    # Check if data is one or two levels deep
+    data_path_1 = Path(file_path) / "data/*/*.parquet"
+    data_path_2 = Path(file_path) / "data/*.parquet"
+
+    if list(Path(file_path).glob("data/*/*.parquet")):
+        data = pl.scan_parquet(data_path_1)
+        logging.info(f"Loading data from {data_path_1}")
+    elif list(Path(file_path).glob("data/*.parquet")):
+        data = pl.scan_parquet(data_path_2)
+        logging.info(f"Loading data from {data_path_2}")
+    else:
+        logging.error("No data found in the specified paths.")
+        return None
+
     logging.info(f"Columns in the file {data.collect_schema().names()}")
     # Create the cache directory if it does not exist
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -79,6 +98,7 @@ def cache_results(file_path):
             .with_columns(pl.col("code").str.split("//").list.first().alias("coding_dict"))
             .group_by("coding_dict")
             .agg(pl.count("coding_dict").alias("count"))
+            .sort("count", descending=True)
             .collect()
         )
         coding_dict.write_parquet(coding_dict_path)

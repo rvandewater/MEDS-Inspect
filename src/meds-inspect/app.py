@@ -220,7 +220,7 @@ def run_app(file_path=None):
                 )
             ], style=content_style)
         elif tab == 'tab-7':
-            fig_coding_dict = px.bar(coding_dict, x="coding_dict", y="count", title="Coding Dictionary Overview",
+            fig_coding_dict = px.bar(coding_dict.limit(1000), x="coding_dict", y="count", title="Coding Dictionary Overview",
                                      color="coding_dict")
             return html.Div([
                 html.H2(children='Coding Dictionary Overview'),

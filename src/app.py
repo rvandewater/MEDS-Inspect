@@ -22,7 +22,6 @@ def run_app(file_path=None):
     if file_path and is_valid_path(file_path):
         cached_results = cache_results(file_path)
 
-    app.run_server(debug=True)
     app.layout = html.Div(children=[
         html.Div(
             children=html.Img(

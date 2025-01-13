@@ -24,12 +24,12 @@ def cache_results(file_path):
         code_count_subjects = pl.read_parquet(code_count_subjects_path)
         top_codes = pl.read_parquet(top_codes_path)
         coding_dict = pl.read_parquet(coding_dict_path)
-        logging.info(f"Loaded cached results at {cache_dir}")
+        logging.info(f"Cached results already available. Loaded cached results at {cache_dir}")
         return code_count_years, code_count_subjects, top_codes, coding_dict
 
-    print("file_path", file_path)
+    logging.info(f"Running cache_results on {file_path}")
     data = pl.scan_parquet(Path(file_path) / "data/*/*.parquet")
-    print("Columns in the file:", data.collect_schema().names())
+    logging.info(f"Columns in the file {data.collect_schema().names()}")
     # Create the cache directory if it does not exist
     cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -93,7 +93,7 @@ def cache_results(file_path):
     if coding_dict is None:
         coding_dict = pl.read_parquet(coding_dict_path)
 
-    logging.info(f"Saved cache to: {cache_dir}")
+    logging.info(f"Caching completed. Saved cache to: {cache_dir}")
     return code_count_years, code_count_subjects, top_codes, coding_dict
 
 def main():
@@ -106,4 +106,6 @@ def main():
     cache_results(file_path)
 
 if __name__ == '__main__':
+    logging.format = '%(asctime)s - %(message)s'
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
     main()

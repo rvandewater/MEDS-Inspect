@@ -2,3 +2,4 @@ polars==1.19.0
 dash==2.18.2
 numpy
 gunicorn
+pandas

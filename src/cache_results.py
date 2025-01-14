@@ -21,24 +21,21 @@ def cache_results(file_path):
     if not is_valid_path(file_path):
         logging.error(f"Invalid path: {file_path}")
         return None
-    cache_dir = get_cache_dir(file_path)
-    # Check if all cached files exist
-    code_count_years_path = cache_dir / "code_count_years.parquet"
-    code_count_subjects_path = cache_dir / "code_count_subjects.parquet"
-    top_codes_path = cache_dir / "top_codes.parquet"
-    coding_dict_path = cache_dir / "coding_dict.parquet"
 
-    if (code_count_years_path.exists() and
-        code_count_subjects_path.exists() and
-        top_codes_path.exists() and
-        coding_dict_path.exists()):
-        # Load the cached results
-        code_count_years = pl.read_parquet(code_count_years_path)
-        code_count_subjects = pl.read_parquet(code_count_subjects_path)
-        top_codes = pl.read_parquet(top_codes_path)
-        coding_dict = pl.read_parquet(coding_dict_path)
-        logging.info(f"Cached results already available. Loaded cached results at {cache_dir}")
-        return code_count_years, code_count_subjects, top_codes, coding_dict
+    cache_dir = get_cache_dir(file_path)
+    cache_files = {
+        "code_count_years": cache_dir / "code_count_years.parquet",
+        "code_count_subjects": cache_dir / "code_count_subjects.parquet",
+        "top_codes": cache_dir / "top_codes.parquet",
+        "coding_dict": cache_dir / "coding_dict.parquet",
+        "numerical_code_data": cache_dir / "numerical_code_data.parquet"
+    }
+
+    # Check if all cached files exist
+    cached_results = {}
+    if all(path.exists() for path in cache_files.values()):
+        cached_results = load_generated_cache(cache_dir, cache_files)
+        return cached_results
 
     logging.info(f"Running cache_results on {file_path}")
     folder_size = get_folder_size(file_path)
@@ -53,25 +50,18 @@ def cache_results(file_path):
     # Create the cache directory if it does not exist
     cache_dir.mkdir(parents=True, exist_ok=True)
 
-    # Initialize variables
-    code_count_years = None
-    code_count_subjects = None
-    top_codes = None
-    coding_dict = None
-
-    if not code_count_years_path.exists():
+    if not cache_files["code_count_years"].exists():
         # Compute the results and save to cache
         code_count_years = (
             data
-            # .filter((pl.col("time") >= pl.datetime(2000, 1, 1)) & (pl.col("time") <= pl.datetime(2025, 12, 31)))
             .with_columns(pl.col("time").dt.strftime("%Y-%m").cast(pl.String).alias("Date"))
             .group_by("Date")
             .agg(pl.count("Date").alias("Amount of codes"))
             .collect()
         )
-        code_count_years.write_parquet(code_count_years_path)
+        code_count_years.write_parquet(cache_files["code_count_years"])
 
-    if not code_count_subjects_path.exists():
+    if not cache_files["code_count_subjects"].exists():
         # Compute the results and save to cache
         code_count_subjects = (
             data
@@ -80,9 +70,9 @@ def cache_results(file_path):
             .agg(pl.count("code").alias("Code count"))
             .collect()
         )
-        code_count_subjects.write_parquet(code_count_subjects_path)
+        code_count_subjects.write_parquet(cache_files["code_count_subjects"])
 
-    if not top_codes_path.exists():
+    if not cache_files["top_codes"].exists():
         # Compute the results and save to cache
         top_codes = (
             data
@@ -91,9 +81,9 @@ def cache_results(file_path):
             .sort("count", descending=True)
             .collect()
         )
-        top_codes.write_parquet(top_codes_path)
+        top_codes.write_parquet(cache_files["top_codes"])
 
-    if not coding_dict_path.exists():
+    if not cache_files["coding_dict"].exists():
         # Compute the results and save to cache
         coding_dict = (
             data
@@ -103,20 +93,32 @@ def cache_results(file_path):
             .sort("count", descending=True)
             .collect()
         )
-        coding_dict.write_parquet(coding_dict_path)
+        coding_dict.write_parquet(cache_files["coding_dict"])
+
+    if not cache_files["numerical_code_data"].exists():
+        numerical_code_data = (
+            pl.scan_parquet(Path(file_path) / "data/*/*.parquet")
+            .filter((pl.col("numeric_value").is_not_null() & pl.col("code").is_not_null()) & pl.col("numeric_value").is_not_nan())
+            .select(pl.col("code"), pl.col("numeric_value"))
+        )
+        numerical_code_data.sink_parquet(cache_files["numerical_code_data"])
 
     # Load the results if they were not loaded from cache
-    if code_count_years is None:
-        code_count_years = pl.read_parquet(code_count_years_path)
-    if code_count_subjects is None:
-        code_count_subjects = pl.read_parquet(code_count_subjects_path)
-    if top_codes is None:
-        top_codes = pl.read_parquet(top_codes_path)
-    if coding_dict is None:
-        coding_dict = pl.read_parquet(coding_dict_path)
 
     logging.info(f"Caching completed. Saved cache to: {cache_dir}")
-    return code_count_years, code_count_subjects, top_codes, coding_dict
+    return load_generated_cache(cache_dir, cache_files)
+
+
+def load_generated_cache(cache_dir, cache_files):
+    cached_results = {}
+    for key, path in cache_files.items():
+        if key == "numerical_code_data":
+            cached_results[key] = pl.scan_parquet(path)
+        else:
+            cached_results[key] = pl.read_parquet(path)
+    logging.info(f"Cached results already available. Loaded cached results at {cache_dir}")
+    return cached_results
+
 
 def main():
     parser = argparse.ArgumentParser(description='Run cache_results with a specified file path.')

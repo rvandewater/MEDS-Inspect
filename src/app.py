@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 from pathlib import Path
@@ -35,7 +36,11 @@ def run_app(initial_path=None):
 
     # if file_path and is_valid_path(file_path):
     cached_results = cache_results(file_path)
-    code_count_years, code_count_subject, top_codes, coding_dict = cached_results
+    code_count_years = cached_results["code_count_years"]
+    code_count_subject = cached_results["code_count_subjects"]
+    top_codes = cached_results["top_codes"]
+    coding_dict = cached_results["coding_dict"]
+    numerical_code_data = cached_results["numerical_code_data"]
 
     app.layout = html.Div(children=[
         html.Div(
@@ -93,8 +98,9 @@ def run_app(initial_path=None):
 
         if n_clicks == 0:
             return current_path, ('Enter the path to your MEDS data folder to get started. '
-                                  'The first run will run several queries on the dataset; '
-                                  'this might take a while depending on the dataset size.'), ''
+                                  'The first time we will run several (lazily evaluated) queries on the dataset '
+                                  'and cache the results; '
+                                  'this could take between a few seconds and a few minutes (for larger datasets).'), ''
         if n_clicks > 0 and is_valid_path(input_path):
             folder_size = get_folder_size(input_path)
             size_in_mb = folder_size / (1024 * 1024)
@@ -117,10 +123,10 @@ def run_app(initial_path=None):
 
         # Get unique patient IDs and codes
         subject_ids = code_count_subject['Subject ID'].unique().to_list()
-        codes = top_codes['code'].unique().to_list()
+        # codes = top_codes['code'].unique().to_list()
 
         content_style = {'border': '2px solid #007BFF', 'padding': '10px', 'borderRadius': '5px'}
-
+        numerical_codes = numerical_code_data.select("code").unique().collect()["code"].to_list()
         if tab == 'tab-1':
             fig_code_count_years = px.histogram(code_count_years, x="Date", y="Amount of codes", nbins=len(code_count_years))
             return html.Div([
@@ -241,8 +247,31 @@ def run_app(initial_path=None):
                 html.H2(children='Numerical distribution for a single code'),
                 dcc.Dropdown(
                     id='code-dropdown',
-                    options=[{'label': code, 'value': code} for code in codes],
+                    options=[{'label': code, 'value': code} for code in numerical_codes],
                     placeholder='Select a code'
+                ),
+                html.P(children='Select the histogram normalization:'),
+                dcc.Dropdown(
+                    id='histnorm-dropdown-code',
+                    options=[
+                        {'label': 'None', 'value': ''},
+                        {'label': 'Probability', 'value': 'probability'},
+                        {'label': 'Probability Density', 'value': 'probability density'},
+                        {'label': 'Density', 'value': 'density'},
+                        {'label': 'Percent', 'value': 'percent'}
+                    ],
+                    value='',
+                    placeholder='Select histogram normalization'
+                ),
+                html.P(children='Adjust the number of bins:'),
+                dcc.Slider(
+                    id='num-bins-slider',
+                    min=10,
+                    max=100,
+                    step=5,
+                    value=10,
+                    marks={i: str(i) for i in range(10, 101, 10)},
+                    tooltip={"placement": "bottom", "always_visible": True}
                 ),
                 dcc.Loading(
                     id='loading-fig-code-distribution',
@@ -268,7 +297,9 @@ def run_app(initial_path=None):
                     multi=True,
                     placeholder='Select search fields'
                 ),
-                html.Button('Search', id='search-button'),
+                html.Button('Search', id='search-button',
+                            style={'display': 'block', 'margin': '20px auto', 'fontSize': '20px'}
+                            ),
                 dcc.Loading(
                     id='loading-search-results',
                     type='default',
@@ -355,18 +386,9 @@ def run_app(initial_path=None):
         Input('top-n-dropdown', 'value')
     )
     def update_top_codes(top_n):
-
-        # top_codes = (
-        #     pl.scan_parquet(Path(file_path) / "data/*/*.parquet")
-        #     .group_by("code")
-        #     .agg(pl.count("code").alias("count"))
-        #     .sort("count", descending=True)
-        #     .limit(top_n)
-        #     .collect()
-        # )
         top_codes_vis = top_codes.limit(top_n)
         fig_top_codes = px.bar(top_codes_vis, x="count", y="code", orientation="h",
-                               title=f"Top {top_n} most frequent codes")
+                               title=f"Top {top_n} most frequent codes", color="code")
         return fig_top_codes
 
     @app.callback(
@@ -393,22 +415,14 @@ def run_app(initial_path=None):
 
     @app.callback(
         Output('fig_code_distribution', 'figure'),
-        Input('code-dropdown', 'value')
+        Input('code-dropdown', 'value'),
+        Input('num-bins-slider', 'value'),
+        Input('histnorm-dropdown-code', 'value')
     )
-    def update_code_distribution(code):
+    def update_code_distribution(code, num_bins, histnorm):
         if code is None:
             return {}
-
-        code_data = (
-            pl.scan_parquet(Path(file_path) / "data/*/*.parquet")
-            .filter((pl.col("code") == code) & (pl.col("numeric_value").is_not_null()))
-            .select(pl.col("numeric_value"))
-            .collect()
-        )
-
-        if code_data.is_empty():
-            return {}
-
+        code_data = numerical_code_data.filter(pl.col("code") == code).collect()
         # Calculate IQR and boundaries
         q1 = code_data['numeric_value'].quantile(0.25)
         q3 = code_data['numeric_value'].quantile(0.75)
@@ -417,24 +431,31 @@ def run_app(initial_path=None):
         upper_bound = q3 + 1.5 * iqr
 
         # Calculate the number of bins using the Freedman-Diaconis rule
-        bin_width = 2 * iqr / np.cbrt(len(code_data))
-        num_bins = int((upper_bound - lower_bound) / bin_width)
+        # bin_width = 2 * iqr / np.cbrt(len(code_data))
 
         fig_code_distribution = px.histogram(
             code_data,
             x="numeric_value",
             title=f"Numerical distribution for code {code}",
             range_x=[lower_bound, upper_bound],
-            nbins=num_bins
+            nbins=num_bins,
+            histnorm=histnorm
         )
         return fig_code_distribution
 
     app.run(debug=True)
 
+def main():
+    parser = argparse.ArgumentParser(description='Run the MEDS INSPECT app with a specified file path.')
+    parser.add_argument('--file_path', type=str, help='The path to the MEDS data folder')
+    args = parser.parse_args()
 
-# Example usage
+    file_path = args.file_path if args.file_path else None
+    run_app(file_path)
+
 if __name__ == '__main__':
     logging.format = '%(asctime)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
-    file_path = "/Users/robin/Documents/datasets/meds/northwestern/"  # Set to None to prompt folder selection
-    run_app(file_path)
+    main()
+
+

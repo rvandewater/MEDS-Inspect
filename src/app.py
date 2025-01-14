@@ -10,9 +10,9 @@ from cache_results import cache_results
 from code_search import load_code_metadata, search_codes
 from utils import get_folder_size, is_valid_path
 import subprocess
-
+import os
 # Set the ROOT_OUTPUT_DIR
-ROOT_OUTPUT_DIR = os.path.join(os.getcwd(), "/assets/MIMIC_IV_DEMO")
+ROOT_OUTPUT_DIR =f"{os.getcwd()}/assets/MIMIC-IV-DEMO-MEDS"
 
 # if not os.path.exists(ROOT_OUTPUT_DIR):
 #     # Run the command
@@ -28,8 +28,8 @@ server = app.server
 
 # file_path=None
 
-if file_path and is_valid_path(file_path):
-    cached_results = cache_results(file_path)
+# if file_path and is_valid_path(file_path):
+cached_results = cache_results(file_path)
 
 app.layout = html.Div(children=[
     html.Div(

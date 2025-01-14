@@ -1,19 +1,14 @@
 import argparse
 import logging
-import os
 from pathlib import Path
-
-import numpy as np
 import polars as pl
-from dash import Dash, html, dcc, Input, Output, State, callback_context
+from dash import Dash, html, dcc, Input, Output, State
 import plotly.express as px
-from meds import subject_id_dtype
-
 from cache_results import cache_results
 from code_search import load_code_metadata, search_codes
 from utils import get_folder_size, is_valid_path
-import subprocess
 import os
+
 # Set the ROOT_OUTPUT_DIR
 sample_data_path =f"{os.getcwd()}/assets/MIMIC-IV-DEMO-MEDS"
 top_codes = None

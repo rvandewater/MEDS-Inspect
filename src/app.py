@@ -440,7 +440,7 @@ def run_app(initial_path=None):
         )
         return fig_code_distribution
 
-    app.run(debug=True)
+    # app.run(debug=True)
 
 def main():
     parser = argparse.ArgumentParser(description='Run the MEDS INSPECT app with a specified file path.')
@@ -456,3 +456,4 @@ if __name__ == '__main__':
     main()
 
 
+run_app(sample_data_path)

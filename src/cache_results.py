@@ -24,6 +24,7 @@ def cache_results(file_path):
 
     cache_dir = get_cache_dir(file_path)
     cache_files = {
+        "general_statistics": cache_dir / "general_statistics.parquet",
         "code_count_years": cache_dir / "code_count_years.parquet",
         "code_count_subjects": cache_dir / "code_count_subjects.parquet",
         "top_codes": cache_dir / "top_codes.parquet",
@@ -49,6 +50,19 @@ def cache_results(file_path):
     logging.info(f"Columns in the file {data.collect_schema().names()}")
     # Create the cache directory if it does not exist
     cache_dir.mkdir(parents=True, exist_ok=True)
+
+    if not cache_files["general_statistics"].exists():
+        # Compute the results and save to cache
+        unique_subjects = data.select(pl.col("subject_id")).unique().count().collect()
+        unique_codes = data.select(pl.col("code")).unique().count().collect()
+
+        general_statistics = pl.DataFrame({
+            "Unique subjects": unique_subjects.item(),
+            "Unique events": unique_codes.item(),
+            "Total events": data.select(pl.len()).collect().item(),
+            "Columns": data.collect_schema().names()
+        })
+        general_statistics.write_parquet(cache_files["general_statistics"])
 
     if not cache_files["code_count_years"].exists():
         # Compute the results and save to cache

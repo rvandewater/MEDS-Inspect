@@ -12,6 +12,11 @@ import os
 # Set the ROOT_OUTPUT_DIR
 sample_data_path =f"{os.getcwd()}/assets/MIMIC-IV-DEMO-MEDS"
 top_codes = None
+app = Dash(__name__, suppress_callback_exceptions=True)
+app.title = "MEDS INSPECT"
+server = app.server
+
+
 def run_app(initial_path=None):
     global top_codes
     # if not os.path.exists(ROOT_OUTPUT_DIR):
@@ -23,9 +28,6 @@ def run_app(initial_path=None):
 
     # Global variable to store cached results
     cached_results = None
-    app = Dash(__name__, suppress_callback_exceptions=True)
-    app.title = "MEDS INSPECT"
-    server = app.server
 
     # file_path=None
 

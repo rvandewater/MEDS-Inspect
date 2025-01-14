@@ -9,14 +9,24 @@ import plotly.express as px
 from cache_results import cache_results
 from code_search import load_code_metadata, search_codes
 from utils import get_folder_size, is_valid_path
+import subprocess
 
+# Set the ROOT_OUTPUT_DIR
+ROOT_OUTPUT_DIR = os.path.join(os.getcwd(), "MIMIC_IV_DEMO")
+
+if not os.path.exists(ROOT_OUTPUT_DIR):
+    # Run the command
+    subprocess.run(["MEDS_extract-MIMIC_IV", f"root_output_dir={ROOT_OUTPUT_DIR}", "do_demo=True"], check=True)
+
+# Set the file_path to the downloaded directory
+file_path = ROOT_OUTPUT_DIR
 # Global variable to store cached results
 cached_results = None
 app = Dash(__name__, suppress_callback_exceptions=True)
 app.title = "MEDS INSPECT"
 server = app.server
 
-file_path=None
+# file_path=None
 
 if file_path and is_valid_path(file_path):
     cached_results = cache_results(file_path)

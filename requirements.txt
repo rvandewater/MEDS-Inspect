@@ -3,3 +3,4 @@ dash==2.18.2
 numpy
 gunicorn
 pandas
+MIMIC_IV_MEDS

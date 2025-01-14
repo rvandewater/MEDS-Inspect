@@ -1,16 +1,27 @@
 import logging
+import shutil
 from pathlib import Path
 import polars as pl
 import argparse
-from utils import get_folder_size, is_valid_path
+from utils import get_folder_size, is_valid_path, return_data_path
 
+def get_cache_dir(file_path):
+    return Path(file_path) / ".meds_inspect_cache"
+
+def invalidate_cache(file_path):
+    cache_dir = get_cache_dir(file_path)
+    if cache_dir.exists() and cache_dir.is_dir():
+        shutil.rmtree(cache_dir)
+        logging.info(f"Cache directory {cache_dir} has been removed.")
+    else:
+        logging.info(f"No cache directory found at {cache_dir}.")
 
 def cache_results(file_path):
-    cache_dir = Path(file_path) / ".meds_inspect_cache"
     logging.info(f"Attempting to load cached results on {file_path}")
     if not is_valid_path(file_path):
         logging.error(f"Invalid path: {file_path}")
         return None
+    cache_dir = get_cache_dir(file_path)
     # Check if all cached files exist
     code_count_years_path = cache_dir / "code_count_years.parquet"
     code_count_subjects_path = cache_dir / "code_count_subjects.parquet"
@@ -34,19 +45,9 @@ def cache_results(file_path):
     size_in_mb = folder_size / (1024 * 1024)
     logging.info(f'(Size: {size_in_mb:.2f} MB)')
 
-    # Check if data is one or two levels deep
-    data_path_1 = Path(file_path) / "data/*/*.parquet"
-    data_path_2 = Path(file_path) / "data/*.parquet"
-
-    if list(Path(file_path).glob("data/*/*.parquet")):
-        data = pl.scan_parquet(data_path_1)
-        logging.info(f"Loading data from {data_path_1}")
-    elif list(Path(file_path).glob("data/*.parquet")):
-        data = pl.scan_parquet(data_path_2)
-        logging.info(f"Loading data from {data_path_2}")
-    else:
-        logging.error("No data found in the specified paths.")
-        return None
+    data_path = return_data_path(file_path) if return_data_path(file_path) \
+        else Exception("Data could not be loaded: check your file setup")
+    data = pl.scan_parquet(data_path)
 
     logging.info(f"Columns in the file {data.collect_schema().names()}")
     # Create the cache directory if it does not exist
@@ -63,20 +64,20 @@ def cache_results(file_path):
         code_count_years = (
             data
             # .filter((pl.col("time") >= pl.datetime(2000, 1, 1)) & (pl.col("time") <= pl.datetime(2025, 12, 31)))
-            .with_columns(pl.col("time").dt.strftime("%Y-%m").cast(pl.String).alias("Month/Year"))
-            .group_by("Month/Year")
-            .agg(pl.count("Month/Year").alias("Amount of codes"))
+            .with_columns(pl.col("time").dt.strftime("%Y-%m").cast(pl.String).alias("Date"))
+            .group_by("Date")
+            .agg(pl.count("Date").alias("Amount of codes"))
             .collect()
         )
-        code_count_years.sink_parquet(code_count_years_path)
+        code_count_years.write_parquet(code_count_years_path)
 
     if not code_count_subjects_path.exists():
         # Compute the results and save to cache
         code_count_subjects = (
             data
             .select(pl.col("subject_id"), pl.col("code"))
-            .group_by("subject_id")
-            .agg(pl.count("code").alias("count"))
+            .group_by(pl.col("subject_id").alias("Subject ID"))
+            .agg(pl.count("code").alias("Code count"))
             .collect()
         )
         code_count_subjects.write_parquet(code_count_subjects_path)

@@ -66,6 +66,7 @@ def cache_results(file_path):
             .with_columns(pl.col("time").dt.strftime("%Y-%m").cast(pl.String).alias("Month/Year"))
             .group_by("Month/Year")
             .agg(pl.count("Month/Year").alias("Amount of codes"))
+            .collect()
         )
         code_count_years.sink_parquet(code_count_years_path)
 

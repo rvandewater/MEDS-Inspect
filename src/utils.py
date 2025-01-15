@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-import polars as pl
+
 
 def get_folder_size(path):
     total_size = 0
@@ -28,6 +28,7 @@ def is_valid_path(path):
     metadata_files = list(metadata_dir.rglob("*.parquet"))
 
     return len(data_files) > 0 and len(metadata_files) > 0
+
 
 def return_data_path(file_path):
     # Check if data is one or two levels deep

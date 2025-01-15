@@ -43,7 +43,7 @@ python src/app.py --file_path=path/to/your/favorite/meds/dataset
 You can start the caching directly from the command line. Caching creates the folder `.meds-inspect-cache`
 
 ```` bash
-python python src/cache_results.py --file_path=path/to/your/favorite/meds/dataset
+python src/cache_results.py --file_path=path/to/your/favorite/meds/dataset
 ````
 
 Impression:

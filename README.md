@@ -29,12 +29,21 @@ pip install -r requirements.txt
 ````
 Launch app:
 ```` bash
-python src/meds-inspect/app.py
+python src/app.py
 ````
-This should start a locally hosted web app. The MIMIC-IV MEDS demo is loaded by default but it can be replaced like this:
+This should start a locally hosted web app. 
+
+## More functionality
+The MIMIC-IV MEDS demo is loaded by default but it can be replaced like this:
 
 ```` bash
-python src/meds-inspect/app.py --file_path=path/to/your/favorite/meds/dataset
+python src/app.py --file_path=path/to/your/favorite/meds/dataset
+````
+
+You can start the caching directly from the command line. Caching creates the folder `.meds-inspect-cache`
+
+```` bash
+python python src/cache_results.py --file_path=path/to/your/favorite/meds/dataset
 ````
 
 Impression:

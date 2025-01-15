@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/rvandewater/MEDS-Inspect/graph/badge.svg?token=E7H6HKZV3O)](https://codecov.io/gh/rvandewater/MEDS-Inspect)
 [![tests](https://github.com/rvandewater/MEDS-Inspect/actions/workflows/tests.yaml/badge.svg)](https://github.com/rvandewater/MEDS-Inspect/actions/workflows/tests.yml)
 [![code-quality](https://github.com/rvandewater/MEDS-Inspect/actions/workflows/code-quality-main.yaml/badge.svg)](https://github.com/rvandewater/MEDS-Inspect/actions/workflows/code-quality-main.yaml)
-![python](https://img.shields.io/badge/-Python_3.11-blue?logo=python&logoColor=white)
+![python](https://img.shields.io/badge/-Python_3.12-blue?logo=python&logoColor=white)
 [![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/rvandewater/MEDS-Inspect#license)
 [![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/rvandewater/MEDS-Inspect/pulls)
 [![contributors](https://img.shields.io/github/contributors/rvandewater/MEDS-Inspect.svg)](https://github.com/rvandewater/MEDS-Inspect/graphs/contributors)

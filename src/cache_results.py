@@ -147,10 +147,12 @@ def load_generated_cache(cache_dir, cache_files):
 def main():
     parser = argparse.ArgumentParser(description='Run cache_results with a specified file path.')
     parser.add_argument('file_path', type=str, help='The path to the MEDS data folder')
+    parser.add_argument('--invalidate',action='store_true', help='Invalidate the cache')
     args = parser.parse_args()
 
     file_path = args.file_path
-
+    if args.invalidate:
+        invalidate_cache(file_path)
     cache_results(file_path)
 
 if __name__ == '__main__':

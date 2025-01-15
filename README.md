@@ -6,6 +6,7 @@ But after building your own MEDS ETL you might be wondering:
 - Is my ETL missing data?
 - What codes are contained in my dataset?
 - How does my data compare to other MEDS datasets?
+- What preprocessing steps are still needed in order to train models?
 
 .. and many more questions related to data exploration. 
 

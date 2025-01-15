@@ -30,7 +30,11 @@ Launch app:
 ```` bash
 python src/meds-inspect/app.py
 ````
-This should start a locally hosted web app
+This should start a locally hosted web app. The MIMIC-IV MEDS demo is loaded by default but it can be replaced like this:
+
+```` bash
+python src/meds-inspect/app.py --file_path=path/to/your/favorite/meds/dataset
+````
 
 Impression:
 ![Screenshot 2025-01-13 at 11-53-07 MEDS INSPECT](https://github.com/user-attachments/assets/03b81fdd-689c-4151-a522-b5b52db74e66)

@@ -121,7 +121,7 @@ def cache_results(file_path):
 
     if not cache_files["numerical_code_data"].exists():
         numerical_code_data = (
-            pl.scan_parquet(Path(file_path) / "data/*/*.parquet")
+            data
             .filter((pl.col("numeric_value").is_not_null() & pl.col("code").is_not_null()) & pl.col("numeric_value").is_not_nan())
             .select(pl.col("code"), pl.col("numeric_value"))
         )

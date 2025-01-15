@@ -7,6 +7,8 @@ from utils import get_folder_size, is_valid_path, return_data_path
 
 def get_cache_dir(file_path):
     return Path(file_path) / ".meds_inspect_cache"
+def get_metadata_dir(file_path):
+    return Path(file_path) / "metadata"
 
 def invalidate_cache(file_path):
     cache_dir = get_cache_dir(file_path)
@@ -15,6 +17,14 @@ def invalidate_cache(file_path):
         logging.info(f"Cache directory {cache_dir} has been removed.")
     else:
         logging.info(f"No cache directory found at {cache_dir}.")
+
+def get_metadata(file_path):
+    if not is_valid_path(file_path):
+        logging.error(f"Invalid path: {file_path}")
+        return None
+    metadata_dir = get_metadata_dir(file_path)
+    metadata = pl.read_json(metadata_dir / "dataset.json")
+    return metadata
 
 def cache_results(file_path):
     logging.info(f"Attempting to load cached results on {file_path}")
@@ -60,7 +70,7 @@ def cache_results(file_path):
             "Unique subjects": unique_subjects.item(),
             "Unique events": unique_codes.item(),
             "Total events": data.select(pl.len()).collect().item(),
-            "Columns": data.collect_schema().names()
+            "Columns": [data.collect_schema().names()]
         })
         general_statistics.write_parquet(cache_files["general_statistics"])
 

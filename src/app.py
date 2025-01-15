@@ -2,23 +2,27 @@ import argparse
 import logging
 from pathlib import Path
 import polars as pl
-from dash import Dash, html, dcc, Input, Output, State
+from dash import Dash, html, dcc, Input, Output, State, dash_table
 import plotly.express as px
-from cache_results import cache_results
+from cache_results import cache_results, get_metadata
 from code_search import load_code_metadata, search_codes
 from utils import get_folder_size, is_valid_path
 import os
-
 # Set the ROOT_OUTPUT_DIR
 sample_data_path =f"{os.getcwd()}/assets/MIMIC-IV-DEMO-MEDS"
 top_codes = None
 app = Dash(__name__, suppress_callback_exceptions=True)
 app.title = "MEDS INSPECT"
 server = app.server
+cached_results = None
+metadata = None
+content_style = {'border': '2px solid #007BFF', 'padding': '10px', 'borderRadius': '5px'}
 
 
 def run_app(initial_path=None):
     global top_codes
+    global cached_results
+    global metadata
     # if not os.path.exists(ROOT_OUTPUT_DIR):
     #     # Run the command
     #     subprocess.run(["MEDS_extract-MIMIC_IV", f"root_output_dir={ROOT_OUTPUT_DIR}", "do_demo=True"], check=True)
@@ -32,13 +36,14 @@ def run_app(initial_path=None):
     # file_path=None
 
     # if file_path and is_valid_path(file_path):
+    metadata = get_metadata(file_path)
     cached_results = cache_results(file_path)
+    general_statistics = cached_results["general_statistics"]
     code_count_years = cached_results["code_count_years"]
     code_count_subject = cached_results["code_count_subjects"]
     top_codes = cached_results["top_codes"]
     coding_dict = cached_results["coding_dict"]
     numerical_code_data = cached_results["numerical_code_data"]
-
     app.layout = html.Div(children=[
         html.Div(
             children=html.Img(
@@ -66,6 +71,7 @@ def run_app(initial_path=None):
                 overlay_style={"visibility": "visible", "filter": "blur(2px)"},
             )
         ], style={'marginTop': '20px'}),
+        html.Div(id='general-stats'),
         dcc.Tabs(id='tabs', value='tab-1', children=[
             dcc.Tab(label='📅 Yearly Overview', value='tab-1'),
             dcc.Tab(label='👤 Per Patient Codes', value='tab-2'),
@@ -92,18 +98,17 @@ def run_app(initial_path=None):
     )
     def update_hidden_path(n_clicks, input_path, current_path):
         global cached_results
-
+        global metadata
         if n_clicks == 0:
-            return current_path, ('Enter the path to your MEDS data folder to get started. '
+            return (current_path, ('Enter the path to your MEDS data folder to get started. '
                                   'The first time we will run several (lazily evaluated) queries on the dataset '
                                   'and cache the results; '
-                                  'this could take between a few seconds and a few minutes (for larger datasets).'), ''
+                                  'this could take between a few seconds and a few minutes (for larger datasets).'), '',)
         if n_clicks > 0 and is_valid_path(input_path):
-            folder_size = get_folder_size(input_path)
-            size_in_mb = folder_size / (1024 * 1024)
             print(f"loading cached results at: {input_path}")
             cached_results = cache_results(input_path)
-            feedback_message = f'Selected folder: {input_path} (Size: {size_in_mb:.2f} MB). Caching complete.'
+            metadata = get_metadata(input_path)
+            feedback_message = f'Selected folder: {input_path}. Caching complete.'
             return input_path, feedback_message, ''
         return current_path, 'Invalid folder path. Please try again.', ''
 
@@ -122,12 +127,11 @@ def run_app(initial_path=None):
         subject_ids = code_count_subject['Subject ID'].unique().to_list()
         # codes = top_codes['code'].unique().to_list()
 
-        content_style = {'border': '2px solid #007BFF', 'padding': '10px', 'borderRadius': '5px'}
         numerical_codes = numerical_code_data.select("code").unique().collect()["code"].to_list()
         if tab == 'tab-1':
             fig_code_count_years = px.histogram(code_count_years, x="Date", y="Amount of codes", nbins=len(code_count_years))
             return html.Div([
-                html.H2(children='Code count over the years'),
+                html.H2(children='Code count over time', style={'textAlign': 'center'}),
                 html.P(children='Adjust the number of bins:'),
                 dcc.Slider(
                     id='bins-slider-years',
@@ -165,7 +169,7 @@ def run_app(initial_path=None):
             fig_code_count_subject = px.histogram(code_count_subject, y="Subject ID", x="Code count", histfunc="count", histnorm='probability',
                                                   title="Code count distribution per patient").update_layout(yaxis_title="Segment of Subjects")
             return html.Div([
-                html.H2(children='Code count per patient'),
+                html.H2(children='Code count per patient', style={'textAlign': 'center'}),
                 html.P(children='Select the histogram normalization:'),
                 dcc.Dropdown(
                     id='histnorm-dropdown',
@@ -202,7 +206,7 @@ def run_app(initial_path=None):
             ], style=content_style)
         elif tab == 'tab-3':
             return html.Div([
-                html.H2(children='Top most frequent codes'),
+                html.H2(children='Top most frequent codes', style={'textAlign': 'center'}),
                 dcc.Dropdown(
                     id='top-n-dropdown',
                     options=[
@@ -224,7 +228,7 @@ def run_app(initial_path=None):
             ], style=content_style)
         elif tab == 'tab-4':
             return html.Div([
-                html.H2(children='Codes over time for a single patient'),
+                html.H2(children='Codes over time for a single patient', style={'textAlign': 'center'}),
                 dcc.Dropdown(
                     id='patient-dropdown',
                     options=[{'label': pid, 'value': pid} for pid in subject_ids],
@@ -241,7 +245,7 @@ def run_app(initial_path=None):
             ], style=content_style)
         elif tab == 'tab-5':
             return html.Div([
-                html.H2(children='Numerical distribution for a single code'),
+                html.H2(children='Numerical distribution for a single code', style={'textAlign': 'center'}),
                 dcc.Dropdown(
                     id='code-dropdown',
                     options=[{'label': code, 'value': code} for code in numerical_codes],
@@ -281,7 +285,7 @@ def run_app(initial_path=None):
             ], style=content_style)
         elif tab == 'tab-6':
             return html.Div([
-                html.H2(children='Code Search'),
+                html.H2(children='Code Search', style={'textAlign': 'center'}),
                 dcc.Input(id='search-term', type='text', placeholder='Enter code or description', n_submit=0),
                 dcc.Dropdown(
                     id='search-options',
@@ -307,7 +311,7 @@ def run_app(initial_path=None):
             fig_coding_dict = px.bar(coding_dict.limit(1000), x="coding_dict", y="count", title="Coding Dictionary Overview",
                                      color="coding_dict")
             return html.Div([
-                html.H2(children='Coding Dictionary Overview'),
+                html.H2(children='Coding Dictionary Overview', style={'textAlign': 'center'}),
                 dcc.Loading(
                     id='loading-fig-coding-dict',
                     type='default',
@@ -318,6 +322,56 @@ def run_app(initial_path=None):
                     )
                 )
             ], style=content_style)
+
+    # Add this callback
+    @app.callback(
+        Output('general-stats', 'children'),
+        Input('hidden-file-path', 'value')
+    )
+    def update_general_stats(file_path):
+        if file_path:
+            general_statistics = cached_results["general_statistics"]
+            metadata = get_metadata(file_path)
+
+            # Convert Polars DataFrame to Pandas DataFrame
+            general_statistics_df = general_statistics.to_pandas()
+
+            # Apply formatting only to numerical columns
+            general_statistics_df[general_statistics_df.select_dtypes(include=['number']).columns] = \
+                general_statistics_df.select_dtypes(include=['number']).map(lambda x: f"{x:,}")
+
+            # Ensure all values are of type string, number, or boolean
+            general_statistics_df = general_statistics_df.astype(str)
+
+            stats_data = general_statistics_df.to_dict(orient='records')
+            stats_columns = [{"name": i, "id": i} for i in general_statistics_df.columns]
+
+            metadata_df = metadata.to_pandas()
+            metadata_data = metadata_df.to_dict(orient='records')
+            metadata_columns = [{"name": i, "id": i} for i in metadata_df.columns]
+
+            stats_table = dash_table.DataTable(
+                columns=stats_columns,
+                data=stats_data,
+                style_table={'width': '100%', 'marginBottom': '20px'},
+                style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'overflow': 'hidden'}
+            )
+
+            metadata_table = dash_table.DataTable(
+                columns=metadata_columns,
+                data=metadata_data,
+                style_table={'width': '100%', 'marginBottom': '20px'},
+                style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'overflow': 'hidden'}
+            )
+
+            card = html.Div([
+                html.H2('Dataset overview', style={'textAlign': 'center'}),
+                html.Div(metadata_table, style={'display': 'block', 'marginBottom': '20px'}),
+                html.Div(stats_table, style={'display': 'block', 'marginBottom': '20px'})
+            ], style=content_style)
+
+            return html.Div(card, style={'fontFamily': 'Helvetica', 'marginBottom': '20px'})
+        return 'No folder selected. Please enter a valid folder path to proceed.'
     @app.callback(
         Output('fig_code_count_years', 'figure'),
         Input('bins-slider-years', 'value'),
@@ -330,7 +384,7 @@ def run_app(initial_path=None):
             y="Amount of codes",
             nbins=bins,
             histnorm=histnorm,
-            title="Code count over the years"
+            # title="Code count over the years"
         )
         return fig_code_count_years
     @app.callback(
@@ -346,7 +400,7 @@ def run_app(initial_path=None):
             x="Code count",
             histfunc="count",
             histnorm=histnorm,
-            title="Code count distribution per patient",
+            # title="Code count distribution per patient",
             nbins=bins
         ).update_layout(yaxis_title="Segment of Subjects")
         return fig_code_count_subject
@@ -440,7 +494,7 @@ def run_app(initial_path=None):
         )
         return fig_code_distribution
 
-    # app.run(debug=True)
+    app.run(debug=True)
 
 def main():
     parser = argparse.ArgumentParser(description='Run the MEDS INSPECT app with a specified file path.')
@@ -456,4 +510,3 @@ if __name__ == '__main__':
     main()
 
 
-run_app(sample_data_path)

@@ -19,7 +19,7 @@ metadata = None
 content_style = {'border': '2px solid #007BFF', 'padding': '10px', 'borderRadius': '5px'}
 
 
-def run_app(initial_path=None):
+def run_app(initial_path=None, port=8050):
     global top_codes
     global cached_results
     global metadata
@@ -136,7 +136,7 @@ def run_app(initial_path=None):
                 dcc.Slider(
                     id='bins-slider-years',
                     min=1,
-                    max=len(code_count_years),
+                    max=len(code_count_years+1),
                     step=1,
                     value=len(code_count_years),
                     marks={i: str(i) for i in range(1, len(code_count_years) + 1, max(1, len(code_count_years) // 10))},
@@ -494,15 +494,16 @@ def run_app(initial_path=None):
         )
         return fig_code_distribution
 
-    app.run(debug=True)
+    app.run(debug=True, port=port)
 
 def main():
     parser = argparse.ArgumentParser(description='Run the MEDS INSPECT app with a specified file path.')
     parser.add_argument('--file_path', type=str, help='The path to the MEDS data folder')
+    parser.add_argument('--port', type=int, help='The port to run the app on', default=8050)
     args = parser.parse_args()
 
     file_path = args.file_path if args.file_path else None
-    run_app(file_path)
+    run_app(file_path, args.port)
 
 if __name__ == '__main__':
     logging.format = '%(asctime)s - %(message)s'

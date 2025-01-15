@@ -1,5 +1,6 @@
 import logging
 import shutil
+from datetime import datetime
 from pathlib import Path
 import polars as pl
 import argparse
@@ -70,7 +71,8 @@ def cache_results(file_path):
             "Unique subjects": unique_subjects.item(),
             "Unique events": unique_codes.item(),
             "Total events": data.select(pl.len()).collect().item(),
-            "Columns": [data.collect_schema().names()]
+            "Columns": [data.collect_schema().names()],
+            "Size (MB)": round(size_in_mb, 2)
         })
         general_statistics.write_parquet(cache_files["general_statistics"])
 
@@ -83,7 +85,21 @@ def cache_results(file_path):
             .agg(pl.count("Date").alias("Amount of codes"))
             .collect()
         )
-        code_count_years.write_parquet(cache_files["code_count_years"])
+        # Get the start and end dates from the `code_count_years` DataFrame
+        start_date = datetime.strptime(code_count_years.select(pl.col("Date").min()).item(), '%Y-%m')
+        end_date = datetime.strptime(code_count_years.select(pl.col("Date").max()).item(), '%Y-%m')
+
+        # Create a complete date range for the desired period
+        date_range = pl.date_range(start=start_date, end=end_date, interval='1mo', closed='both', eager=True)
+        date_range_df = pl.DataFrame(date_range.alias("Date")).with_columns(pl.col("Date").dt.strftime("%Y-%m").cast(pl.String))
+
+        # Merge with the existing data
+        complete_code_count_years = date_range_df.join(code_count_years, on="Date", how="left")
+
+        # Fill missing values with zeros
+        complete_code_count_years = complete_code_count_years.fill_null(0)
+
+        complete_code_count_years.write_parquet(cache_files["code_count_years"])
 
     if not cache_files["code_count_subjects"].exists():
         # Compute the results and save to cache

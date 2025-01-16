@@ -1,10 +1,12 @@
-# 🕵️ MEDS-Inspect 
+# 🕵️ MEDS-Inspect
+
 [![PyPI - Version](https://img.shields.io/pypi/v/MEDS-Inspect)](https://pypi.org/project/MEDS-Inspect/)
 [![Documentation Status](https://readthedocs.org/projects/meds-transforms/badge/?version=latest)](https://meds-transforms.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/rvandewater/MEDS-Inspect/graph/badge.svg?token=E7H6HKZV3O)](https://codecov.io/gh/rvandewater/MEDS-Inspect)
 [![tests](https://github.com/rvandewater/MEDS-Inspect/actions/workflows/tests.yaml/badge.svg)](https://github.com/rvandewater/MEDS-Inspect/actions/workflows/tests.yml)
 [![code-quality](https://github.com/rvandewater/MEDS-Inspect/actions/workflows/code-quality-main.yaml/badge.svg)](https://github.com/rvandewater/MEDS-Inspect/actions/workflows/code-quality-main.yaml)
 ![python](https://img.shields.io/badge/-Python_3.12-blue?logo=python&logoColor=white)
+![Static Badge](https://img.shields.io/badge/MEDS-0.3.3-blue)
 [![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/rvandewater/MEDS-Inspect#license)
 [![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/rvandewater/MEDS-Inspect/pulls)
 [![contributors](https://img.shields.io/github/contributors/rvandewater/MEDS-Inspect.svg)](https://github.com/rvandewater/MEDS-Inspect/graphs/contributors)

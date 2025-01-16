@@ -1,7 +1,6 @@
 import argparse
 import logging
 import os
-from pathlib import Path
 
 import plotly.express as px
 import polars as pl
@@ -9,7 +8,7 @@ from dash import Dash, Input, Output, State, dash_table, dcc, html
 
 from cache_results import cache_results, get_metadata
 from code_search import load_code_metadata, search_codes
-from utils import is_valid_path
+from utils import is_valid_path, return_data_path
 
 # Set the ROOT_OUTPUT_DIR
 sample_data_path = f"{os.getcwd()}/assets/MIMIC-IV-DEMO-MEDS"
@@ -256,6 +255,16 @@ def run_app(initial_path=None, port=8050):
                         value=10,
                         placeholder="Select top N codes",
                     ),
+                    html.P(children="Select the scale:"),
+                    dcc.Dropdown(
+                        id="scale-dropdown-top-codes",
+                        options=[
+                            {"label": "Linear", "value": "linear"},
+                            {"label": "Log", "value": "log"},
+                        ],
+                        value="linear",
+                        placeholder="Select scale",
+                    ),
                     dcc.Loading(
                         id="loading-fig-top-codes",
                         type="default",
@@ -355,22 +364,24 @@ def run_app(initial_path=None, port=8050):
                 style=card_style,
             )
         elif tab == "tab-7":
-            fig_coding_dict = px.bar(
-                coding_dict.limit(1000),
-                x="coding_dict",
-                y="count",
-                title="Coding Dictionary Overview",
-                color="coding_dict",
-            )
             return html.Div(
                 [
                     html.H2(children="Coding Dictionary Overview", style={"textAlign": "center"}),
+                    html.P(children="Select the scale:"),
+                    dcc.Dropdown(
+                        id="scale-dropdown",
+                        options=[
+                            {"label": "Linear", "value": "linear"},
+                            {"label": "Log", "value": "log"},
+                        ],
+                        value="linear",
+                        placeholder="Select scale",
+                    ),
                     dcc.Loading(
                         id="loading-fig-coding-dict",
                         type="default",
                         children=dcc.Graph(
                             id="fig_coding_dict",
-                            figure=fig_coding_dict,
                             style={"width": "90hh", "height": "90vh"},
                         ),
                     ),
@@ -502,8 +513,12 @@ def run_app(initial_path=None, port=8050):
             ),
         ]
 
-    @app.callback(Output("fig_top_codes", "figure"), Input("top-n-dropdown", "value"))
-    def update_top_codes(top_n):
+    @app.callback(
+        Output("fig_top_codes", "figure"),
+        Input("top-n-dropdown", "value"),
+        Input("scale-dropdown-top-codes", "value"),
+    )
+    def update_top_codes(top_n, scale):
         top_codes_vis = top_codes.limit(top_n)
         fig_top_codes = px.bar(
             top_codes_vis,
@@ -512,6 +527,7 @@ def run_app(initial_path=None, port=8050):
             orientation="h",
             title=f"Top {top_n} most frequent codes",
             color="code",
+            log_x=True if scale == "log" else False,
         )
         return fig_top_codes
 
@@ -521,7 +537,7 @@ def run_app(initial_path=None, port=8050):
             return {}
 
         patient_data = (
-            pl.scan_parquet(Path(file_path) / "data/*/*.parquet")
+            pl.scan_parquet(return_data_path(file_path))
             .filter(pl.col("subject_id") == patient_id)
             .select(pl.col("time"), pl.col("code"))
             .collect()
@@ -564,6 +580,21 @@ def run_app(initial_path=None, port=8050):
             histnorm=histnorm,
         )
         return fig_code_distribution
+
+    @app.callback(
+        Output("fig_coding_dict", "figure"),
+        Input("scale-dropdown", "value"),
+    )
+    def update_coding_dict(scale):
+        fig_coding_dict = px.bar(
+            coding_dict.limit(1000),
+            x="coding_dict",
+            y="count",
+            title="Coding Dictionary Overview",
+            color="coding_dict",
+            log_y=True if scale == "log" else False,
+        )
+        return fig_coding_dict
 
     app.run(debug=True, port=port)
 

@@ -27,6 +27,8 @@ dev = ["pre-commit<4"]
 tests = ["pytest", "pytest-cov"]
 [project.scripts]
 MEDS_Inspect = "MEDS_Inspect.__main__:main"
+MEDS_Inspect_cache = "MEDS_Inspect.cache.__main__:main"
+
 [project.urls]
 Homepage = "https://github.com/rvandewater/MEDS-Inpect"
 Issues = "https://github.com/rvandewater/MEDS-Inpect/issues"

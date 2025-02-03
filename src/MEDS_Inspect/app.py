@@ -4,7 +4,7 @@ import plotly.express as px
 import polars as pl
 from dash import Dash, Input, Output, State, dash_table, dcc, html
 
-from .cache_results import cache_results, get_metadata
+from .cache.cache_results import cache_results, get_metadata
 from .code_search import load_code_metadata, search_codes
 from .utils import is_valid_path, return_data_path
 

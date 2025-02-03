@@ -36,7 +36,8 @@ Then start a server with the following:
 MEDS_Inspect --port=8060 --file_path="path/to/your/meds/dataset"
 ```
 
-This will start a local web app that you can access in your browser. Running this command without a file path will default to the MIMIC-IV Demo data in MEDS
+This will start a local web app that you can access in your browser. Running this command without a file path will
+default to the MIMIC-IV Demo data in MEDS
 
 You should also be able to enter an arbitrary filepath from the GUI.
 
@@ -65,23 +66,17 @@ pip install -r requirements.txt
 Launch app:
 
 ```bash
-python src/app.py
+python src/MEDS_Inspect/__main__.py
 ```
 
 This should start a locally hosted web app.
 
-## More functionality
-
-The MIMIC-IV MEDS demo is loaded by default but it can be replaced like this:
-
-```bash
-python src/app.py --file_path=path/to/your/favorite/meds/dataset
-```
+## Functionality
 
 You can start the caching directly from the command line. Caching creates the folder `.meds-inspect-cache`
 
 ```bash
-python src/cache_results.py --file_path=path/to/your/favorite/meds/dataset
+python MEDS_Inspect_cache path/to/your/favorite/meds/dataset
 ```
 
 Impression:

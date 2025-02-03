@@ -1,15 +1,16 @@
-import os
+import importlib.resources as pkg_resources
 
 import plotly.express as px
 import polars as pl
-from code_search import load_code_metadata, search_codes
 from dash import Dash, Input, Output, State, dash_table, dcc, html
-from utils import is_valid_path, return_data_path
 
-from cache_results import cache_results, get_metadata
+from .cache_results import cache_results, get_metadata
+from .code_search import load_code_metadata, search_codes
+from .utils import is_valid_path, return_data_path
 
 # Set the ROOT_OUTPUT_DIR
-sample_data_path = f"{os.getcwd()}/assets/MIMIC-IV-DEMO-MEDS"
+package_name = "MEDS_Inspect"
+sample_data_path = f"{pkg_resources.files(package_name)}/assets/MIMIC-IV-DEMO-MEDS"
 top_codes = None
 app = Dash(__name__, suppress_callback_exceptions=True)
 app.title = "MEDS INSPECT"

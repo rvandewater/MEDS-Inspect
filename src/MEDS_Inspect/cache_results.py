@@ -6,7 +6,7 @@ from pathlib import Path
 
 import polars as pl
 
-from utils import get_folder_size, is_valid_path, return_data_path
+from .utils import get_folder_size, is_valid_path, return_data_path
 
 
 def get_cache_dir(file_path):

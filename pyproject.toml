@@ -23,7 +23,8 @@ dependencies = [
 "pandas==2.2.3",
 ]
 
-[tool.setuptools_scm]
+[tool.setuptools]
+include-package-data = true
 
 [project.optional-dependencies]
 dev = ["pre-commit<4"]
@@ -36,3 +37,6 @@ MEDS_Inspect = "MEDS_Inspect.__main__:main"
 [project.urls]
 Homepage = "https://github.com/rvandewater/MEDS-Inpect"
 Issues = "https://github.com/rvandewater/MEDS-Inpect/issues"
+
+[tool.setuptools.package-data]
+"MEDS_Inspect" = ["assets/*"]

@@ -1,14 +1,12 @@
-import argparse
-import logging
 import os
 
 import plotly.express as px
 import polars as pl
+from code_search import load_code_metadata, search_codes
 from dash import Dash, Input, Output, State, dash_table, dcc, html
+from utils import is_valid_path, return_data_path
 
 from cache_results import cache_results, get_metadata
-from code_search import load_code_metadata, search_codes
-from utils import is_valid_path, return_data_path
 
 # Set the ROOT_OUTPUT_DIR
 sample_data_path = f"{os.getcwd()}/assets/MIMIC-IV-DEMO-MEDS"
@@ -597,19 +595,3 @@ def run_app(initial_path=None, port=8050):
         return fig_coding_dict
 
     app.run(debug=True, port=port)
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Run the MEDS INSPECT app with a specified file path.")
-    parser.add_argument("--file_path", type=str, help="The path to the MEDS data folder")
-    parser.add_argument("--port", type=int, help="The port to run the app on", default=8050)
-    args = parser.parse_args()
-
-    file_path = args.file_path if args.file_path else None
-    run_app(file_path, args.port)
-
-
-if __name__ == "__main__":
-    logging.format = "%(asctime)s - %(message)s"
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
-    main()

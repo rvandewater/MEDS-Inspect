@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools-scm>=8.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "MEDS-Inspect"
+dynamic = ["version"]
+authors = [
+  { name="Robin van de Water", email="robin.vandewater@hpi.de" },
+]
+description = "MEDS-Inspect is an interactive data visualization app that supports you in your data exploration."
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+"polars==1.21.0",
+"dash==2.18.2",
+"numpy==2.2.2",
+"pandas==2.2.3",
+]
+
+[tool.setuptools_scm]
+
+[project.optional-dependencies]
+dev = ["pre-commit<4"]
+tests = ["pytest", "pytest-cov"]
+
+
+[project.scripts]
+MEDS_Inspect = "MEDS_Inspect.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/rvandewater/MEDS-Inpect"
+Issues = "https://github.com/rvandewater/MEDS-Inpect/issues"

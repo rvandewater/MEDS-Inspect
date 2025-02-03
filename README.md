@@ -26,6 +26,22 @@ MEDS-Inspect is an interactive data visualization app that supports you in your 
 
 ## Getting started
 
+```bash
+pip install MEDS-Inspect
+```
+
+Then start a server with the following:
+
+```bash
+MEDS_Inspect --port=8060 --file_path="path/to/your/meds/dataset"
+```
+
+This will start a local web app that you can access in your browser. Running this command without a file path will default to the MIMIC-IV Demo data in MEDS
+
+You should also be able to enter an arbitrary filepath from the GUI.
+
+## Getting started (development)
+
 Clone repository:
 
 ```bash

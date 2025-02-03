@@ -1,0 +1,4 @@
+include src/MEDS_Inspect/assets/MIMIC-IV-DEMO-MEDS/data/train/*
+include src/MEDS_Inspect/assets/MIMIC-IV-DEMO-MEDS/data/tuning/*
+include src/MEDS_Inspect/assets/MIMIC-IV-DEMO-MEDS/data/held_out/*
+include src/MEDS_Inspect/assets/MIMIC-IV-DEMO-MEDS/metadata/*

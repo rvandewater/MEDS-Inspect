@@ -1,12 +1,15 @@
 import importlib.resources as pkg_resources
+import logging
+import os
 
+import pandas as pd
 import plotly.express as px
 import polars as pl
 from dash import Dash, Input, Output, State, dash_table, dcc, html
 
 from .cache.cache_results import cache_results, get_metadata
 from .code_search import load_code_metadata, search_codes
-from .utils import is_valid_path, return_data_path
+from .utils import get_detected_tasks, is_valid_path, return_data_path
 
 # Set the ROOT_OUTPUT_DIR
 package_name = "MEDS_Inspect"
@@ -148,6 +151,9 @@ def run_app(initial_path=None, port=8050):
         # codes = top_codes['code'].unique().to_list()
 
         numerical_codes = numerical_code_data.select("code").unique().collect()["code"].to_list()
+
+        detected_tasks = get_detected_tasks(file_path)
+
         if tab == "tab-1":
             fig_code_count_years = px.histogram(
                 code_count_years, x="Date", y="Amount of codes", nbins=len(code_count_years)
@@ -280,6 +286,11 @@ def run_app(initial_path=None, port=8050):
                         id="patient-dropdown",
                         options=[{"label": pid, "value": pid} for pid in subject_ids],
                         placeholder="Select a patient ID",
+                    ),
+                    dcc.Dropdown(
+                        id="task-dropdown",
+                        options=[{"label": task, "value": task} for task in detected_tasks],
+                        placeholder="Select a task",
                     ),
                     dcc.Loading(
                         id="loading-fig-patient-codes",
@@ -530,10 +541,25 @@ def run_app(initial_path=None, port=8050):
         )
         return fig_top_codes
 
-    @app.callback(Output("fig_patient_codes", "figure"), Input("patient-dropdown", "value"))
-    def update_patient_codes(patient_id):
+    @app.callback(
+        Output("fig_patient_codes", "figure"),
+        Output("task-dropdown", "options"),
+        Input("patient-dropdown", "value"),
+        Input("hidden-file-path", "value"),
+        Input("task-dropdown", "value"),
+    )
+    def update_patient_codes_and_task_dropdown(patient_id, file_path, selected_task):
+        if file_path:
+            tasks_path = os.path.join(file_path, "tasks")
+            detected_tasks = [
+                f for f in os.listdir(tasks_path) if os.path.isfile(os.path.join(tasks_path, f))
+            ]
+            task_options = [{"label": task, "value": task} for task in detected_tasks]
+        else:
+            task_options = []
+
         if patient_id is None:
-            return {}
+            return {}, task_options
 
         patient_data = (
             pl.scan_parquet(return_data_path(file_path))
@@ -543,12 +569,53 @@ def run_app(initial_path=None, port=8050):
         )
 
         if patient_data.is_empty():
-            return {}
+            return {}, task_options
 
         fig_patient_codes = px.scatter(
             patient_data, x="time", y="code", title=f"Codes over time for patient {patient_id}"
         )
-        return fig_patient_codes
+
+        if selected_task:
+            task_file_path = os.path.join(file_path, "tasks", selected_task)
+            if os.path.isfile(task_file_path):
+                task_data = pl.read_parquet(task_file_path)
+                if not task_data.is_empty():
+                    task_label = task_data.filter(pl.col("subject_id") == patient_id)
+                    # task_label.with_columns(pl.col("prediction_time").cast())
+                    if not task_label.is_empty():
+                        logging.info(f"Task label: {task_label}")
+                        # Workaround for vline in plotly
+                        logging.info(f"Task label: {task_label}")
+                        for row in task_label.iter_rows(named=True):
+                            prediction_time_timestamp = row["prediction_time"].timestamp() * 1000
+                            task_name = os.path.splitext(selected_task)[0]
+                            color = "red" if row.get("boolean_value", False) else "green"
+
+                            hover_text = f"Task: {task_name}<br>Prediction Time: {row['prediction_time']}"
+                            if "boolean_value" in row and row["boolean_value"] is not None:
+                                hover_text += f"<br>Boolean Value: {row['boolean_value']}"
+                            if "integer_value" in row and row["integer_value"] is not None:
+                                hover_text += f"<br>Integer Value: {row['integer_value']}"
+                            if "float_value" in row and row["float_value"] is not None:
+                                hover_text += f"<br>Float Value: {row['float_value']}"
+                            if "categorical_value" in row and row["categorical_value"] is not None:
+                                hover_text += f"<br>Categorical Value: {row['categorical_value']}"
+
+                            fig_patient_codes.add_scatter(
+                                x=[prediction_time_timestamp, prediction_time_timestamp],
+                                y=[0, 1],
+                                mode="lines",
+                                line=dict(color=color, dash="dash"),
+                                customdata=pd.Series(data=row),
+                                hovertemplate=hover_text,
+                                name=task_name + f" {row["prediction_time"]}",
+                                yaxis="y",
+                            )
+
+                            # fig.update_layout(  hovertemplate="<br>".join([
+                            # "Time: %{customdata['time']}",]))
+
+        return fig_patient_codes, task_options
 
     @app.callback(
         Output("fig_code_distribution", "figure"),

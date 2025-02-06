@@ -1,0 +1,9 @@
+initial_path: null
+sample_data_path: null
+port: 8050
+app:
+  title: "MEDS INSPECT"
+  suppress_callback_exceptions: true
+limits:
+  subject_ids: 10
+  coding_dict: 1000

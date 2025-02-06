@@ -614,7 +614,7 @@ def run_app(initial_path=None, port=8050):
                             line=dict(color=color, dash="dash"),
                             customdata=pd.Series(data=row),
                             hovertemplate=hover_text,
-                            name=task_name + f" {row["prediction_time"]}",
+                            name=task_name + f" {row['prediction_time']}",
                             yaxis="y2",
                         )
                         fig_patient_codes.update_layout(yaxis2=dict(showticklabels=False))

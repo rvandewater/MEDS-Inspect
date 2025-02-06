@@ -42,6 +42,8 @@ def run_app(initial_path=None, port=8050):
     top_codes = cached_results["top_codes"]
     coding_dict = cached_results["coding_dict"]
     numerical_code_data = cached_results["numerical_code_data"]
+    subject_ids = code_count_subject["Subject ID"].unique().to_list()
+
     app.layout = html.Div(
         children=[
             html.Div(
@@ -146,7 +148,6 @@ def run_app(initial_path=None, port=8050):
             return html.Div("No folder selected. Please enter a valid folder path to proceed.")
 
         # Get unique patient IDs and codes
-        subject_ids = code_count_subject["Subject ID"].unique().to_list()
         # codes = top_codes['code'].unique().to_list()
 
         numerical_codes = numerical_code_data.select("code").unique().collect()["code"].to_list()
@@ -553,7 +554,9 @@ def run_app(initial_path=None, port=8050):
         if file_path:
             tasks_path = os.path.join(file_path, "tasks")
             detected_tasks = [
-                f for f in os.listdir(tasks_path) if os.path.isfile(os.path.join(tasks_path, f))
+                f
+                for f in os.listdir(tasks_path)
+                if os.path.isfile(os.path.join(tasks_path, f)) or os.path.isdir(os.path.join(tasks_path, f))
             ]
             task_options = [{"label": os.path.splitext(task)[0], "value": task} for task in detected_tasks]
         else:
@@ -586,7 +589,7 @@ def run_app(initial_path=None, port=8050):
 
         if selected_task:
             task_file_path = os.path.join(file_path, "tasks", selected_task)
-            if os.path.isfile(task_file_path):
+            if os.path.isfile(task_file_path) or os.path.isdir(task_file_path):
                 task_data = pl.scan_parquet(task_file_path)
                 task_label = task_data.filter(pl.col("subject_id") == patient_id).collect()
                 # task_label.with_columns(pl.col("prediction_time").cast())

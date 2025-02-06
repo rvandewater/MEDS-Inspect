@@ -16,10 +16,10 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-"polars==1.21.0",
+"polars>=1.15.0",
 "dash==2.18.2",
-"numpy==2.2.2",
-"pandas==2.2.3",
+"numpy>=2",
+"pandas>=2",
 ]
 [tool.setuptools_scm]
 [project.optional-dependencies]

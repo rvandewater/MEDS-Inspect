@@ -49,6 +49,7 @@ def cache_results(file_path):
         "top_codes": cache_dir / "top_codes.parquet",
         "coding_dict": cache_dir / "coding_dict.parquet",
         "numerical_code_data": cache_dir / "numerical_code_data.parquet",
+        "subject_ids": cache_dir / "subject_ids.parquet",
     }
 
     # Check if all cached files exist

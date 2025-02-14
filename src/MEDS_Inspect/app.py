@@ -66,8 +66,10 @@ def run_app(cfg: DictConfig = None):
     top_codes = cached_results["top_codes"]
     coding_dict = cached_results["coding_dict"]
     numerical_code_data = cached_results["numerical_code_data"]
-    subject_ids = cached_results["subject_ids"].tolist()
-
+    if len(coding_dict) > cfg.limits.subject_ids:
+        subject_ids = cached_results["code_count_subjects"]["Subject ID"].to_list()
+    else:
+        subject_ids = None
     app.layout = html.Div(
         children=[
             html.Div(
@@ -309,7 +311,7 @@ def run_app(cfg: DictConfig = None):
                     value=None,
                     style=dict({"width": "100%"}, **standard_style),
                 )
-                if len(subject_ids) > 100000
+                if not subject_ids
                 else dcc.Dropdown(
                     id="subject-input",
                     options=[{"label": pid, "value": pid} for pid in subject_ids],
@@ -549,8 +551,8 @@ def run_app(cfg: DictConfig = None):
                 [
                     (
                         f"Found {len(results)} results"
-                        if len(results) < 1000
-                        else "Showing first 1000 results found. Please refine search"
+                        if len(results) < cfg.limits.search_results
+                        else f"Showing first {cfg.limits.search_results} results found. Please refine search"
                     )
                 ]
             ),
@@ -624,7 +626,7 @@ def run_app(cfg: DictConfig = None):
         )
 
         if subject_data.is_empty():
-            return go.Figure(), task_options, "subject ID not found."
+            return go.Figure(), task_options, "Subject ID not found."
 
         fig_subject_codes = px.scatter(
             subject_data,

@@ -602,12 +602,18 @@ def run_app(cfg: DictConfig = None):
 
         if file_path:
             tasks_path = os.path.join(file_path, "tasks")
-            detected_tasks = [
-                f
-                for f in os.listdir(tasks_path)
-                if os.path.isfile(os.path.join(tasks_path, f)) or os.path.isdir(os.path.join(tasks_path, f))
-            ]
-            task_options = [{"label": os.path.splitext(task)[0], "value": task} for task in detected_tasks]
+            if os.path.isdir(tasks_path):
+                detected_tasks = [
+                    f
+                    for f in os.listdir(tasks_path)
+                    if os.path.isfile(os.path.join(tasks_path, f))
+                    or os.path.isdir(os.path.join(tasks_path, f))
+                ]
+                task_options = [
+                    {"label": os.path.splitext(task)[0], "value": task} for task in detected_tasks
+                ]
+            else:
+                task_options = []
         else:
             task_options = []
 

@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "MEDS-Inspect"
+doi: "10.5281/zenodo.14891940"
+authors:
+  - family-names: "van de Water"
+    given-names: "Robin Philippus"
+    orcid: "https://orcid.org/0000-0002-2895-4872"
+date-released: "2025-02-19"
+url: "https://github.com/rvandewater/MEDS-Inspect"
+repository-code: "https://github.com/rvandewater/MEDS-Inspect"
+license: "MIT"

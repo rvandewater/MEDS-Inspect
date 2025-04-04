@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "MEDS-Inspect"
-doi: "10.5281/zenodo.14891940"
+doi: "10.5281/zenodo.14892253"
 authors:
   - family-names: "van de Water"
     given-names: "Robin Philippus"

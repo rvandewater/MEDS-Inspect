@@ -10,6 +10,7 @@
 [![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/rvandewater/MEDS-Inspect#license)
 [![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/rvandewater/MEDS-Inspect/pulls)
 [![contributors](https://img.shields.io/github/contributors/rvandewater/MEDS-Inspect.svg)](https://github.com/rvandewater/MEDS-Inspect/graphs/contributors)
+[![DOI](https://zenodo.org/badge/918107518.svg)](https://doi.org/10.5281/zenodo.14891939)
 
 MEDS (Medical Event Data Standard) is "the simplest possible standard for health AI" (https://medical-event-data-standard.github.io/).
 

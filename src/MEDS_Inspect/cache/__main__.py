@@ -4,6 +4,7 @@ import logging
 from .cache_results import cache_results
 
 
+# @hydra.main(version_base=None, config_path="configs", config_name="general")
 def main():
     parser = argparse.ArgumentParser(
         description="Run caching for the MEDS INSPECT app with a specified file path."

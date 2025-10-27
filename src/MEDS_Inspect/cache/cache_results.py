@@ -7,6 +7,7 @@ from pathlib import Path
 import polars as pl
 
 from ..utils import get_folder_size, is_valid_path, return_data_path
+from tqdm.auto import tqdm
 
 
 def get_cache_dir(file_path):
@@ -72,8 +73,12 @@ def cache_results(file_path):
     logging.info(f"Columns in the file {data.collect_schema().names()}")
     # Create the cache directory if it does not exist
     cache_dir.mkdir(parents=True, exist_ok=True)
+    progress = tqdm(
+        total=len(cache_files), desc=f"Caching {Path(file_path).name}", unit="file"
+    )
 
     if not cache_files["general_statistics"].exists():
+        logging.info(f"Running cache_results on {file_path}")
         # Compute the results and save to cache
         unique_subjects = data.select(pl.col("subject_id")).unique().count().collect()
         unique_codes = data.select(pl.col("code")).unique().count().collect()
@@ -88,8 +93,10 @@ def cache_results(file_path):
             }
         )
         general_statistics.write_parquet(cache_files["general_statistics"])
+        progress.update(1)
 
     if not cache_files["code_count_years"].exists():
+        logging.info(f"Running cache_results on {file_path}")
         # Compute the results and save to cache
         code_count_years = (
             data.with_columns(
@@ -124,8 +131,10 @@ def cache_results(file_path):
         complete_code_count_years = complete_code_count_years.fill_null(0)
 
         complete_code_count_years.write_parquet(cache_files["code_count_years"])
+        progress.update(1)
 
     if not cache_files["code_count_subjects"].exists():
+        logging.info(f"Running cache_results on {file_path}")
         # Compute the results and save to cache
         code_count_subjects = (
             data.select(pl.col("subject_id"), pl.col("code"))
@@ -134,8 +143,10 @@ def cache_results(file_path):
             .collect()
         )
         code_count_subjects.write_parquet(cache_files["code_count_subjects"])
+        progress.update(1)
 
     if not cache_files["top_codes"].exists():
+        logging.info(f"Running cache_results on {file_path}")
         # Compute the results and save to cache
         top_codes = (
             data.group_by("code")
@@ -144,8 +155,10 @@ def cache_results(file_path):
             .collect()
         )
         top_codes.write_parquet(cache_files["top_codes"])
+        progress.update(1)
 
     if not cache_files["coding_dict"].exists():
+        logging.info(f"Running cache_results on {file_path}")
         # Compute the results and save to cache
         coding_dict = (
             data.with_columns(
@@ -157,13 +170,16 @@ def cache_results(file_path):
             .collect()
         )
         coding_dict.write_parquet(cache_files["coding_dict"])
+        progress.update(1)
 
     if not cache_files["numerical_code_data"].exists():
+        logging.info(f"Running cache_results on {file_path}")
         numerical_code_data = data.filter(
             (pl.col("numeric_value").is_not_null() & pl.col("code").is_not_null())
             & pl.col("numeric_value").is_not_nan()
         ).select(pl.col("code"), pl.col("numeric_value"))
         numerical_code_data.sink_parquet(cache_files["numerical_code_data"])
+        progress.update(1)
 
     # Load the results if they were not loaded from cache
 

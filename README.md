@@ -1,3 +1,5 @@
+![MEDS-Inspect Logo](assets/meds_inspect_logo.svg)
+
 # 🕵️ MEDS-Inspect
 
 [![PyPI - Version](https://img.shields.io/pypi/v/MEDS-Inspect)](https://pypi.org/project/MEDS-Inspect/)

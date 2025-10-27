@@ -1,18 +1,19 @@
 import importlib.resources as pkg_resources
+import logging
 import os
 
 import pandas as pd
 import plotly.express as px
 import polars as pl
 from dash import Dash, Input, Output, State, dash_table, dcc, html
+from omegaconf import DictConfig
 
 from .cache.cache_results import cache_results, get_metadata
 from .code_search import load_code_metadata, search_codes
 from .utils import is_valid_path, return_data_path
 
-# Set the ROOT_OUTPUT_DIR
 package_name = "MEDS_Inspect"
-sample_data_path = f"{pkg_resources.files(package_name)}/assets/MIMIC-IV-DEMO-MEDS"
+sample_data_path = None
 top_codes = None
 app = Dash(__name__, suppress_callback_exceptions=True)
 app.title = "MEDS INSPECT"
@@ -20,14 +21,36 @@ server = app.server
 cached_results = None
 metadata = None
 card_style = {"border": "2px solid #007BFF", "padding": "10px", "borderRadius": "5px"}
+standard_style = {
+    "fontfamily": "Helvetica",
+    # "bottom": "0",
+    # "left": "0",
+    "line-height": "34px",
+    "padding-left": "10px",
+    "padding-right": "10px",
+    "right": "0",
+    "top": "0",
+    "max-width": "100%",
+    "overflow": "hidden",
+    "text-overflow": "ellipsis",
+    # "white-space": "nowrap",
+}
 
 
-def run_app(initial_path=None, port=8050):
+def run_app(cfg: DictConfig = None):
+
     global top_codes
     global cached_results
     global metadata
+
+    sample_data_path = (
+        cfg.sample_data_path
+        if cfg.sample_data_path
+        else f"{pkg_resources.files(package_name)}/assets/MIMIC-IV-DEMO-MEDS"
+    )
+
     # Set the file_path to the downloaded directory
-    file_path = initial_path if initial_path else sample_data_path
+    file_path = cfg.initial_path if cfg.initial_path else sample_data_path
 
     # Global variable to store cached results
     cached_results = None
@@ -35,6 +58,7 @@ def run_app(initial_path=None, port=8050):
     # file_path=None
 
     # if file_path and is_valid_path(file_path):
+    logging.info(f"loading cached results at: {file_path}")
     metadata = get_metadata(file_path)
     cached_results = cache_results(file_path)
     code_count_years = cached_results["code_count_years"]
@@ -42,8 +66,10 @@ def run_app(initial_path=None, port=8050):
     top_codes = cached_results["top_codes"]
     coding_dict = cached_results["coding_dict"]
     numerical_code_data = cached_results["numerical_code_data"]
-    subject_ids = code_count_subject["Subject ID"].unique().to_list()
-
+    if len(coding_dict) > cfg.limits.subject_ids:
+        subject_ids = cached_results["code_count_subjects"]["Subject ID"].to_list()
+    else:
+        subject_ids = None
     app.layout = html.Div(
         children=[
             html.Div(
@@ -97,9 +123,9 @@ def run_app(initial_path=None, port=8050):
                 value="tab-1",
                 children=[
                     dcc.Tab(label="📅 Yearly Overview", value="tab-1"),
-                    dcc.Tab(label="👤 Per Patient Codes", value="tab-2"),
+                    dcc.Tab(label="👤 Per subject Codes", value="tab-2"),
                     dcc.Tab(label="🏆 Top Codes", value="tab-3"),
-                    dcc.Tab(label="🕒 Patient Timeline", value="tab-4"),
+                    dcc.Tab(label="🕒 Subject Timeline", value="tab-4"),
                     dcc.Tab(label="📊 Code Distribution", value="tab-5"),
                     dcc.Tab(label="🔍 Code Search", value="tab-6"),
                     dcc.Tab(label="📖 Coding Dictionary", value="tab-7"),
@@ -147,7 +173,7 @@ def run_app(initial_path=None, port=8050):
         if not file_path:
             return html.Div("No folder selected. Please enter a valid folder path to proceed.")
 
-        # Get unique patient IDs and codes
+        # Get unique subject IDs and codes
         # codes = top_codes['code'].unique().to_list()
 
         numerical_codes = numerical_code_data.select("code").unique().collect()["code"].to_list()
@@ -204,11 +230,11 @@ def run_app(initial_path=None, port=8050):
                 x="Code count",
                 histfunc="count",
                 histnorm="probability",
-                title="Code count distribution per patient",
+                title="Code count distribution per subject",
             ).update_layout(yaxis_title="Segment of Subjects")
             return html.Div(
                 [
-                    html.H2(children="Code count per patient", style={"textAlign": "center"}),
+                    html.H2(children="Code count per subject", style={"textAlign": "center"}),
                     html.P(children="Select the histogram normalization:"),
                     dcc.Dropdown(
                         id="histnorm-dropdown",
@@ -277,27 +303,45 @@ def run_app(initial_path=None, port=8050):
                 style=card_style,
             )
         elif tab == "tab-4":
+            subject_input = (
+                dcc.Input(
+                    id="subject-input",
+                    type="number",
+                    placeholder="Enter a subject ID",
+                    value=None,
+                    style=dict({"width": "100%"}, **standard_style),
+                )
+                if not subject_ids
+                else dcc.Dropdown(
+                    id="subject-input",
+                    options=[{"label": pid, "value": pid} for pid in subject_ids],
+                    placeholder="Select a subject ID",
+                    value=None,
+                    multi=False,
+                    searchable=True,
+                    clearable=True,
+                    style={"width": "100%"},
+                )
+            )
             return html.Div(
                 [
-                    html.H2(children="Codes over time for a single patient", style={"textAlign": "center"}),
-                    dcc.Dropdown(
-                        id="patient-dropdown",
-                        options=[{"label": pid, "value": pid} for pid in subject_ids[:1000]],
-                        placeholder="Select a patient ID",
-                        value=None,
-                        multi=False,
-                        searchable=True,
-                        clearable=True,
-                        style={"width": "100%"},
-                    ),
+                    html.H2(children="Codes over time for a single subject", style={"textAlign": "center"}),
+                    subject_input,
                     dcc.Dropdown(
                         id="task-dropdown",
                         placeholder="Select a task",
                     ),
+                    html.Button(
+                        "Confirm",
+                        id="confirm-button",
+                        n_clicks=0,
+                        style={"display": "block", "margin": "20px auto", "fontSize": "20px"},
+                    ),
+                    html.Div(id="feedback", style={"color": "red", "marginTop": "10px"}),
                     dcc.Loading(
-                        id="loading-fig-patient-codes",
+                        id="loading-fig-subject-codes",
                         type="default",
-                        children=dcc.Graph(id="fig_patient_codes", style={"width": "90hh", "height": "90vh"}),
+                        children=dcc.Graph(id="fig_subject_codes", style={"width": "90hh", "height": "90vh"}),
                     ),
                 ],
                 style=card_style,
@@ -480,7 +524,7 @@ def run_app(initial_path=None, port=8050):
             x="Code count",
             histfunc="count",
             histnorm=histnorm,
-            # title="Code count distribution per patient",
+            # title="Code count distribution per subject",
             nbins=bins,
         ).update_layout(yaxis_title="Segment of Subjects")
         return fig_code_count_subject
@@ -507,8 +551,8 @@ def run_app(initial_path=None, port=8050):
                 [
                     (
                         f"Found {len(results)} results"
-                        if len(results) < 1000
-                        else "Showing first 1000 results found. Please refine search"
+                        if len(results) < cfg.limits.search_results
+                        else f"Showing first {cfg.limits.search_results} results found. Please refine search"
                     )
                 ]
             ),
@@ -543,46 +587,59 @@ def run_app(initial_path=None, port=8050):
         )
         return fig_top_codes
 
+    import plotly.graph_objects as go
+
     @app.callback(
-        Output("fig_patient_codes", "figure"),
+        Output("fig_subject_codes", "figure"),
         Output("task-dropdown", "options"),
-        Input("patient-dropdown", "value"),
-        Input("hidden-file-path", "value"),
-        Input("task-dropdown", "value"),
+        Output("feedback", "children"),
+        Input("confirm-button", "n_clicks"),
+        State("subject-input", "value"),
+        State("hidden-file-path", "value"),
+        State("task-dropdown", "value"),
     )
-    def update_patient_codes_and_task_dropdown(patient_id, file_path, selected_task):
+    def update_subject_codes_and_task_dropdown(n_clicks, subject_id, file_path, selected_task):
+
         if file_path:
             tasks_path = os.path.join(file_path, "tasks")
-            detected_tasks = [
-                f
-                for f in os.listdir(tasks_path)
-                if os.path.isfile(os.path.join(tasks_path, f)) or os.path.isdir(os.path.join(tasks_path, f))
-            ]
-            task_options = [{"label": os.path.splitext(task)[0], "value": task} for task in detected_tasks]
+            if os.path.isdir(tasks_path):
+                detected_tasks = [
+                    f
+                    for f in os.listdir(tasks_path)
+                    if os.path.isfile(os.path.join(tasks_path, f))
+                    or os.path.isdir(os.path.join(tasks_path, f))
+                ]
+                task_options = [
+                    {"label": os.path.splitext(task)[0], "value": task} for task in detected_tasks
+                ]
+            else:
+                task_options = []
         else:
             task_options = []
 
-        if patient_id is None:
-            return {}, task_options
+        if n_clicks == 0:
+            return go.Figure(), task_options, ""
 
-        patient_data = (
+        if subject_id is None:
+            return go.Figure(), task_options, ""
+
+        subject_data = (
             pl.scan_parquet(return_data_path(file_path))
-            .filter(pl.col("subject_id") == patient_id)
+            .filter(pl.col("subject_id") == subject_id)
             .select(pl.col("time"), pl.col("code"), pl.col("numeric_value"), pl.col("text_value"))
             .with_columns(pl.col("code").str.split("/").list.first().alias("coding_dict"))
             .collect()
         )
 
-        if patient_data.is_empty():
-            return {}, task_options
+        if subject_data.is_empty():
+            return go.Figure(), task_options, "Subject ID not found."
 
-        # Create the scatter plot with color based on the category
-        fig_patient_codes = px.scatter(
-            patient_data,
+        fig_subject_codes = px.scatter(
+            subject_data,
             x="time",
             y="code",
             color="coding_dict",
-            title=f"Codes over time for patient {patient_id}",
+            title=f"Codes over time for subject {subject_id}",
             labels={"coding_dict": "Code Category"},
             hover_data={"code": True, "numeric_value": True, "text_value": True},
         )
@@ -591,10 +648,8 @@ def run_app(initial_path=None, port=8050):
             task_file_path = os.path.join(file_path, "tasks", selected_task)
             if os.path.isfile(task_file_path) or os.path.isdir(task_file_path):
                 task_data = pl.scan_parquet(task_file_path)
-                task_label = task_data.filter(pl.col("subject_id") == patient_id).collect()
-                # task_label.with_columns(pl.col("prediction_time").cast())
+                task_label = task_data.filter(pl.col("subject_id") == subject_id).collect()
                 if not task_label.is_empty():
-                    # Workaround for plotly that does not allow datetime values
                     for row in task_label.iter_rows(named=True):
                         prediction_time_timestamp = row["prediction_time"].timestamp() * 1000
                         task_name = os.path.splitext(selected_task)[0]
@@ -610,7 +665,7 @@ def run_app(initial_path=None, port=8050):
                         if "categorical_value" in row and row["categorical_value"] is not None:
                             hover_text += f"<br>Categorical Value: {row['categorical_value']}"
 
-                        fig_patient_codes.add_scatter(
+                        fig_subject_codes.add_scatter(
                             x=[prediction_time_timestamp, prediction_time_timestamp],
                             y=[0, 1],
                             mode="lines",
@@ -620,9 +675,9 @@ def run_app(initial_path=None, port=8050):
                             name=task_name + f" {row['prediction_time']}",
                             yaxis="y2",
                         )
-                        fig_patient_codes.update_layout(yaxis2=dict(showticklabels=False))
+                        fig_subject_codes.update_layout(yaxis2=dict(showticklabels=False))
 
-        return fig_patient_codes, task_options
+        return fig_subject_codes, task_options, ""
 
     @app.callback(
         Output("fig_code_distribution", "figure"),
@@ -660,7 +715,7 @@ def run_app(initial_path=None, port=8050):
     )
     def update_coding_dict(scale):
         fig_coding_dict = px.bar(
-            coding_dict.limit(1000),
+            coding_dict.limit(cfg.limits.coding_dict),
             x="coding_dict",
             y="count",
             title="Coding Dictionary Overview",
@@ -669,4 +724,4 @@ def run_app(initial_path=None, port=8050):
         )
         return fig_coding_dict
 
-    app.run(debug=True, port=port)
+    app.run(debug=True, port=cfg.port)

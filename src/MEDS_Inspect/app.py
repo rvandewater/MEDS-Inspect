@@ -845,4 +845,4 @@ def run_app(cfg: DictConfig = None):
         )
         return fig_coding_dict
 
-    app.run(debug=True, port=cfg.port)
+    app.run(debug=cfg.debug, port=cfg.port)

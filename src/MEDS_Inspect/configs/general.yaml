@@ -1,6 +1,7 @@
 initial_path: null
 sample_data_path: null
 port: 8050
+debug: false
 app:
   title: "MEDS INSPECT"
   suppress_callback_exceptions: true

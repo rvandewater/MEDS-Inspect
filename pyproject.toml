@@ -33,5 +33,5 @@ MEDS_Inspect = "MEDS_Inspect.__main__:main"
 MEDS_Inspect_cache = "MEDS_Inspect.cache.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/rvandewater/MEDS-Inpect"
+Homepage = "https://github.com/rvandewater/MEDS-Inspect"
 Issues = "https://github.com/rvandewater/MEDS-Inpect/issues"

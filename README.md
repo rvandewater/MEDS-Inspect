@@ -27,6 +27,8 @@ MEDS-Inspect is an interactive data visualization app that supports you in your 
 
 ## Getting started
 
+You can use any of the ETLs available in the MEDS ecosystem to create your own MEDS dataset, see [here for an updated list](https://medical-event-data-standard.github.io/docs/intro_pages/ecosystem?topics=Dataset+ETLs).
+
 ```bash
 pip install MEDS-Inspect
 ```

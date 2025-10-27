@@ -46,5 +46,7 @@ def return_data_path(file_path):
 
 def get_detected_tasks(file_path):
     tasks_path = os.path.join(file_path, "tasks")
-    detected_tasks = [f for f in os.listdir(tasks_path) if os.path.isfile(os.path.join(tasks_path, f))]
+    detected_tasks = [
+        f for f in os.listdir(tasks_path) if os.path.isfile(os.path.join(tasks_path, f))
+    ]
     return detected_tasks

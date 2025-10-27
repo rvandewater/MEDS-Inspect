@@ -92,23 +92,33 @@ def cache_results(file_path):
     if not cache_files["code_count_years"].exists():
         # Compute the results and save to cache
         code_count_years = (
-            data.with_columns(pl.col("time").dt.strftime("%Y-%m").cast(pl.String).alias("Date"))
+            data.with_columns(
+                pl.col("time").dt.strftime("%Y-%m").cast(pl.String).alias("Date")
+            )
             .group_by("Date")
             .agg(pl.count("Date").alias("Amount of codes"))
             .collect()
         )
         # Get the start and end dates from the `code_count_years` DataFrame
-        start_date = datetime.strptime(code_count_years.select(pl.col("Date").min()).item(), "%Y-%m")
-        end_date = datetime.strptime(code_count_years.select(pl.col("Date").max()).item(), "%Y-%m")
+        start_date = datetime.strptime(
+            code_count_years.select(pl.col("Date").min()).item(), "%Y-%m"
+        )
+        end_date = datetime.strptime(
+            code_count_years.select(pl.col("Date").max()).item(), "%Y-%m"
+        )
 
         # Create a complete date range for the desired period
-        date_range = pl.date_range(start=start_date, end=end_date, interval="1mo", closed="both", eager=True)
+        date_range = pl.date_range(
+            start=start_date, end=end_date, interval="1mo", closed="both", eager=True
+        )
         date_range_df = pl.DataFrame(date_range.alias("Date")).with_columns(
             pl.col("Date").dt.strftime("%Y-%m").cast(pl.String)
         )
 
         # Merge with the existing data
-        complete_code_count_years = date_range_df.join(code_count_years, on="Date", how="left")
+        complete_code_count_years = date_range_df.join(
+            code_count_years, on="Date", how="left"
+        )
 
         # Fill missing values with zeros
         complete_code_count_years = complete_code_count_years.fill_null(0)
@@ -138,7 +148,9 @@ def cache_results(file_path):
     if not cache_files["coding_dict"].exists():
         # Compute the results and save to cache
         coding_dict = (
-            data.with_columns(pl.col("code").str.split("/").list.first().alias("coding_dict"))
+            data.with_columns(
+                pl.col("code").str.split("/").list.first().alias("coding_dict")
+            )
             .group_by("coding_dict")
             .agg(pl.count("coding_dict").alias("count"))
             .sort("count", descending=True)
@@ -166,14 +178,22 @@ def load_generated_cache(cache_dir, cache_files):
             cached_results[key] = pl.scan_parquet(path)
         else:
             cached_results[key] = pl.read_parquet(path)
-    logging.info(f"Cached results already available. Loaded cached results at {cache_dir}")
+    logging.info(
+        f"Cached results already available. Loaded cached results at {cache_dir}"
+    )
     return cached_results
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run cache_results with a specified file path.")
-    parser.add_argument("--file_path", type=str, help="The path to the MEDS data folder")
-    parser.add_argument("--invalidate", action="store_true", help="Invalidate the cache")
+    parser = argparse.ArgumentParser(
+        description="Run cache_results with a specified file path."
+    )
+    parser.add_argument(
+        "--file_path", type=str, help="The path to the MEDS data folder"
+    )
+    parser.add_argument(
+        "--invalidate", action="store_true", help="Invalidate the cache"
+    )
     args = parser.parse_args()
 
     file_path = args.file_path

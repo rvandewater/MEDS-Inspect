@@ -38,7 +38,6 @@ standard_style = {
 
 
 def run_app(cfg: DictConfig = None):
-
     global top_codes
     global cached_results
     global metadata
@@ -92,7 +91,8 @@ def run_app(cfg: DictConfig = None):
                 style={"textAlign": "center", "fontSize": "20px"},
             ),
             html.Div(
-                id="path-feedback", style={"marginTop": "10px", "color": "green", "textAlign": "center"}
+                id="path-feedback",
+                style={"marginTop": "10px", "color": "green", "textAlign": "center"},
             ),
             html.Div(
                 [
@@ -100,13 +100,22 @@ def run_app(cfg: DictConfig = None):
                         id="input-path",
                         type="text",
                         placeholder="Enter folder path",
-                        style={"width": "80%", "margin": "0 auto", "display": "block", "fontSize": "20px"},
+                        style={
+                            "width": "80%",
+                            "margin": "0 auto",
+                            "display": "block",
+                            "fontSize": "20px",
+                        },
                     ),
                     html.Button(
                         "Inspect 🔎",
                         id="submit-path",
                         n_clicks=0,
-                        style={"display": "block", "margin": "20px auto", "fontSize": "20px"},
+                        style={
+                            "display": "block",
+                            "margin": "20px auto",
+                            "fontSize": "20px",
+                        },
                     ),
                     dcc.Loading(
                         id="loading-feedback",
@@ -131,7 +140,11 @@ def run_app(cfg: DictConfig = None):
                     dcc.Tab(label="📖 Coding Dictionary", value="tab-7"),
                 ],
             ),
-            dcc.Loading(id="loading-tabs-content", type="default", children=html.Div(id="tabs-content")),
+            dcc.Loading(
+                id="loading-tabs-content",
+                type="default",
+                children=html.Div(id="tabs-content"),
+            ),
         ],
         style={"fontFamily": "Helvetica", "marginLeft": "30px", "marginRight": "30px"},
     )
@@ -167,24 +180,35 @@ def run_app(cfg: DictConfig = None):
         return current_path, "Invalid folder path. Please try again.", ""
 
     @app.callback(
-        Output("tabs-content", "children"), Input("tabs", "value"), State("hidden-file-path", "value")
+        Output("tabs-content", "children"),
+        Input("tabs", "value"),
+        State("hidden-file-path", "value"),
     )
     def render_content(tab, file_path):
         if not file_path:
-            return html.Div("No folder selected. Please enter a valid folder path to proceed.")
+            return html.Div(
+                "No folder selected. Please enter a valid folder path to proceed."
+            )
 
         # Get unique subject IDs and codes
         # codes = top_codes['code'].unique().to_list()
 
-        numerical_codes = numerical_code_data.select("code").unique().collect()["code"].to_list()
+        numerical_codes = (
+            numerical_code_data.select("code").unique().collect()["code"].to_list()
+        )
 
         if tab == "tab-1":
             fig_code_count_years = px.histogram(
-                code_count_years, x="Date", y="Amount of codes", nbins=len(code_count_years)
+                code_count_years,
+                x="Date",
+                y="Amount of codes",
+                nbins=len(code_count_years),
             )
             return html.Div(
                 [
-                    html.H2(children="Code count over time", style={"textAlign": "center"}),
+                    html.H2(
+                        children="Code count over time", style={"textAlign": "center"}
+                    ),
                     html.P(children="Adjust the number of bins:"),
                     dcc.Slider(
                         id="bins-slider-years",
@@ -194,7 +218,11 @@ def run_app(cfg: DictConfig = None):
                         value=len(code_count_years),
                         marks={
                             i: str(i)
-                            for i in range(1, len(code_count_years) + 1, max(1, len(code_count_years) // 10))
+                            for i in range(
+                                1,
+                                len(code_count_years) + 1,
+                                max(1, len(code_count_years) // 10),
+                            )
                         },
                         tooltip={"placement": "bottom", "always_visible": True},
                     ),
@@ -204,7 +232,10 @@ def run_app(cfg: DictConfig = None):
                         options=[
                             {"label": "None", "value": ""},
                             {"label": "Probability", "value": "probability"},
-                            {"label": "Probability Density", "value": "probability density"},
+                            {
+                                "label": "Probability Density",
+                                "value": "probability density",
+                            },
                             {"label": "Density", "value": "density"},
                             {"label": "Percent", "value": "percent"},
                         ],
@@ -234,14 +265,19 @@ def run_app(cfg: DictConfig = None):
             ).update_layout(yaxis_title="Segment of Subjects")
             return html.Div(
                 [
-                    html.H2(children="Code count per subject", style={"textAlign": "center"}),
+                    html.H2(
+                        children="Code count per subject", style={"textAlign": "center"}
+                    ),
                     html.P(children="Select the histogram normalization:"),
                     dcc.Dropdown(
                         id="histnorm-dropdown",
                         options=[
                             {"label": "None", "value": ""},
                             {"label": "Probability", "value": "probability"},
-                            {"label": "Probability Density", "value": "probability density"},
+                            {
+                                "label": "Probability Density",
+                                "value": "probability density",
+                            },
                             {"label": "Density", "value": "density"},
                             {"label": "Percent", "value": "percent"},
                         ],
@@ -273,7 +309,10 @@ def run_app(cfg: DictConfig = None):
         elif tab == "tab-3":
             return html.Div(
                 [
-                    html.H2(children="Top most frequent codes", style={"textAlign": "center"}),
+                    html.H2(
+                        children="Top most frequent codes",
+                        style={"textAlign": "center"},
+                    ),
                     dcc.Dropdown(
                         id="top-n-dropdown",
                         options=[
@@ -297,7 +336,10 @@ def run_app(cfg: DictConfig = None):
                     dcc.Loading(
                         id="loading-fig-top-codes",
                         type="default",
-                        children=dcc.Graph(id="fig_top_codes", style={"width": "90hh", "height": "90vh"}),
+                        children=dcc.Graph(
+                            id="fig_top_codes",
+                            style={"width": "90hh", "height": "90vh"},
+                        ),
                     ),
                 ],
                 style=card_style,
@@ -325,7 +367,10 @@ def run_app(cfg: DictConfig = None):
             )
             return html.Div(
                 [
-                    html.H2(children="Codes over time for a single subject", style={"textAlign": "center"}),
+                    html.H2(
+                        children="Codes over time for a single subject",
+                        style={"textAlign": "center"},
+                    ),
                     subject_input,
                     dcc.Dropdown(
                         id="task-dropdown",
@@ -335,13 +380,22 @@ def run_app(cfg: DictConfig = None):
                         "Confirm",
                         id="confirm-button",
                         n_clicks=0,
-                        style={"display": "block", "margin": "20px auto", "fontSize": "20px"},
+                        style={
+                            "display": "block",
+                            "margin": "20px auto",
+                            "fontSize": "20px",
+                        },
                     ),
-                    html.Div(id="feedback", style={"color": "red", "marginTop": "10px"}),
+                    html.Div(
+                        id="feedback", style={"color": "red", "marginTop": "10px"}
+                    ),
                     dcc.Loading(
                         id="loading-fig-subject-codes",
                         type="default",
-                        children=dcc.Graph(id="fig_subject_codes", style={"width": "90hh", "height": "90vh"}),
+                        children=dcc.Graph(
+                            id="fig_subject_codes",
+                            style={"width": "90hh", "height": "90vh"},
+                        ),
                     ),
                 ],
                 style=card_style,
@@ -350,11 +404,14 @@ def run_app(cfg: DictConfig = None):
             return html.Div(
                 [
                     html.H2(
-                        children="Numerical distribution for a single code", style={"textAlign": "center"}
+                        children="Numerical distribution for a single code",
+                        style={"textAlign": "center"},
                     ),
                     dcc.Dropdown(
                         id="code-dropdown",
-                        options=[{"label": code, "value": code} for code in numerical_codes],
+                        options=[
+                            {"label": code, "value": code} for code in numerical_codes
+                        ],
                         placeholder="Select a code",
                     ),
                     html.P(children="Select the histogram normalization:"),
@@ -363,7 +420,10 @@ def run_app(cfg: DictConfig = None):
                         options=[
                             {"label": "None", "value": ""},
                             {"label": "Probability", "value": "probability"},
-                            {"label": "Probability Density", "value": "probability density"},
+                            {
+                                "label": "Probability Density",
+                                "value": "probability density",
+                            },
                             {"label": "Density", "value": "density"},
                             {"label": "Percent", "value": "percent"},
                         ],
@@ -384,7 +444,8 @@ def run_app(cfg: DictConfig = None):
                         id="loading-fig-code-distribution",
                         type="default",
                         children=dcc.Graph(
-                            id="fig_code_distribution", style={"width": "90hh", "height": "50vh"}
+                            id="fig_code_distribution",
+                            style={"width": "90hh", "height": "50vh"},
                         ),
                     ),
                 ],
@@ -395,7 +456,10 @@ def run_app(cfg: DictConfig = None):
                 [
                     html.H2(children="Code Search", style={"textAlign": "center"}),
                     dcc.Input(
-                        id="search-term", type="text", placeholder="Enter code or description", n_submit=0
+                        id="search-term",
+                        type="text",
+                        placeholder="Enter code or description",
+                        n_submit=0,
                     ),
                     dcc.Dropdown(
                         id="search-options",
@@ -411,10 +475,16 @@ def run_app(cfg: DictConfig = None):
                     html.Button(
                         "Search",
                         id="search-button",
-                        style={"display": "block", "margin": "20px auto", "fontSize": "20px"},
+                        style={
+                            "display": "block",
+                            "margin": "20px auto",
+                            "fontSize": "20px",
+                        },
                     ),
                     dcc.Loading(
-                        id="loading-search-results", type="default", children=html.Div(id="search-results")
+                        id="loading-search-results",
+                        type="default",
+                        children=html.Div(id="search-results"),
                     ),
                 ],
                 style=card_style,
@@ -422,7 +492,10 @@ def run_app(cfg: DictConfig = None):
         elif tab == "tab-7":
             return html.Div(
                 [
-                    html.H2(children="Coding Dictionary Overview", style={"textAlign": "center"}),
+                    html.H2(
+                        children="Coding Dictionary Overview",
+                        style={"textAlign": "center"},
+                    ),
                     html.P(children="Select the scale:"),
                     dcc.Dropdown(
                         id="scale-dropdown",
@@ -446,7 +519,9 @@ def run_app(cfg: DictConfig = None):
             )
 
     # Add this callback
-    @app.callback(Output("general-stats", "children"), Input("hidden-file-path", "value"))
+    @app.callback(
+        Output("general-stats", "children"), Input("hidden-file-path", "value")
+    )
     def update_general_stats(file_path):
         if file_path:
             general_statistics = cached_results["general_statistics"]
@@ -456,15 +531,19 @@ def run_app(cfg: DictConfig = None):
             general_statistics_df = general_statistics.to_pandas()
 
             # Apply formatting only to numerical columns
-            general_statistics_df[general_statistics_df.select_dtypes(include=["number"]).columns] = (
-                general_statistics_df.select_dtypes(include=["number"]).map(lambda x: f"{x:,}")
+            general_statistics_df[
+                general_statistics_df.select_dtypes(include=["number"]).columns
+            ] = general_statistics_df.select_dtypes(include=["number"]).map(
+                lambda x: f"{x:,}"
             )
 
             # Ensure all values are of type string, number, or boolean
             general_statistics_df = general_statistics_df.astype(str)
 
             stats_data = general_statistics_df.to_dict(orient="records")
-            stats_columns = [{"name": i, "id": i} for i in general_statistics_df.columns]
+            stats_columns = [
+                {"name": i, "id": i} for i in general_statistics_df.columns
+            ]
 
             metadata_df = metadata.to_pandas()
             metadata_data = metadata_df.to_dict(orient="records")
@@ -474,26 +553,41 @@ def run_app(cfg: DictConfig = None):
                 columns=stats_columns,
                 data=stats_data,
                 style_table={"width": "100%", "marginBottom": "20px"},
-                style_cell={"textAlign": "left", "whiteSpace": "normal", "overflow": "hidden"},
+                style_cell={
+                    "textAlign": "left",
+                    "whiteSpace": "normal",
+                    "overflow": "hidden",
+                },
             )
 
             metadata_table = dash_table.DataTable(
                 columns=metadata_columns,
                 data=metadata_data,
                 style_table={"width": "100%", "marginBottom": "20px"},
-                style_cell={"textAlign": "left", "whiteSpace": "normal", "overflow": "hidden"},
+                style_cell={
+                    "textAlign": "left",
+                    "whiteSpace": "normal",
+                    "overflow": "hidden",
+                },
             )
 
             card = html.Div(
                 [
                     html.H2("Dataset overview", style={"textAlign": "center"}),
-                    html.Div(metadata_table, style={"display": "block", "marginBottom": "20px"}),
-                    html.Div(stats_table, style={"display": "block", "marginBottom": "20px"}),
+                    html.Div(
+                        metadata_table,
+                        style={"display": "block", "marginBottom": "20px"},
+                    ),
+                    html.Div(
+                        stats_table, style={"display": "block", "marginBottom": "20px"}
+                    ),
                 ],
                 style=card_style,
             )
 
-            return html.Div(card, style={"fontFamily": "Helvetica", "marginBottom": "20px"})
+            return html.Div(
+                card, style={"fontFamily": "Helvetica", "marginBottom": "20px"}
+            )
         return "No folder selected. Please enter a valid folder path to proceed."
 
     @app.callback(
@@ -537,7 +631,9 @@ def run_app(cfg: DictConfig = None):
         State("search-options", "value"),
         State("hidden-file-path", "value"),
     )
-    def update_search_results(n_clicks, n_submit, search_term, search_options, file_path):
+    def update_search_results(
+        n_clicks, n_submit, search_term, search_options, file_path
+    ):
         if (n_clicks is None and n_submit == 0) or not search_term:
             return "Enter a search term to find codes."
 
@@ -561,7 +657,12 @@ def run_app(cfg: DictConfig = None):
                     html.Thead(html.Tr([html.Th(col) for col in results.columns])),
                     html.Tbody(
                         [
-                            html.Tr([html.Td(results[col].to_list()[i]) for col in results.columns])
+                            html.Tr(
+                                [
+                                    html.Td(results[col].to_list()[i])
+                                    for col in results.columns
+                                ]
+                            )
                             for i in range(len(results))
                         ]
                     ),
@@ -598,8 +699,9 @@ def run_app(cfg: DictConfig = None):
         State("hidden-file-path", "value"),
         State("task-dropdown", "value"),
     )
-    def update_subject_codes_and_task_dropdown(n_clicks, subject_id, file_path, selected_task):
-
+    def update_subject_codes_and_task_dropdown(
+        n_clicks, subject_id, file_path, selected_task
+    ):
         if file_path:
             tasks_path = os.path.join(file_path, "tasks")
             if os.path.isdir(tasks_path):
@@ -610,7 +712,8 @@ def run_app(cfg: DictConfig = None):
                     or os.path.isdir(os.path.join(tasks_path, f))
                 ]
                 task_options = [
-                    {"label": os.path.splitext(task)[0], "value": task} for task in detected_tasks
+                    {"label": os.path.splitext(task)[0], "value": task}
+                    for task in detected_tasks
                 ]
             else:
                 task_options = []
@@ -626,8 +729,15 @@ def run_app(cfg: DictConfig = None):
         subject_data = (
             pl.scan_parquet(return_data_path(file_path))
             .filter(pl.col("subject_id") == subject_id)
-            .select(pl.col("time"), pl.col("code"), pl.col("numeric_value"), pl.col("text_value"))
-            .with_columns(pl.col("code").str.split("/").list.first().alias("coding_dict"))
+            .select(
+                pl.col("time"),
+                pl.col("code"),
+                pl.col("numeric_value"),
+                pl.col("text_value"),
+            )
+            .with_columns(
+                pl.col("code").str.split("/").list.first().alias("coding_dict")
+            )
             .collect()
         )
 
@@ -648,10 +758,14 @@ def run_app(cfg: DictConfig = None):
             task_file_path = os.path.join(file_path, "tasks", selected_task)
             if os.path.isfile(task_file_path) or os.path.isdir(task_file_path):
                 task_data = pl.scan_parquet(task_file_path)
-                task_label = task_data.filter(pl.col("subject_id") == subject_id).collect()
+                task_label = task_data.filter(
+                    pl.col("subject_id") == subject_id
+                ).collect()
                 if not task_label.is_empty():
                     for row in task_label.iter_rows(named=True):
-                        prediction_time_timestamp = row["prediction_time"].timestamp() * 1000
+                        prediction_time_timestamp = (
+                            row["prediction_time"].timestamp() * 1000
+                        )
                         task_name = os.path.splitext(selected_task)[0]
                         color = "red" if row.get("boolean_value", False) else "green"
 
@@ -662,8 +776,13 @@ def run_app(cfg: DictConfig = None):
                             hover_text += f"<br>Integer Value: {row['integer_value']}"
                         if "float_value" in row and row["float_value"] is not None:
                             hover_text += f"<br>Float Value: {row['float_value']}"
-                        if "categorical_value" in row and row["categorical_value"] is not None:
-                            hover_text += f"<br>Categorical Value: {row['categorical_value']}"
+                        if (
+                            "categorical_value" in row
+                            and row["categorical_value"] is not None
+                        ):
+                            hover_text += (
+                                f"<br>Categorical Value: {row['categorical_value']}"
+                            )
 
                         fig_subject_codes.add_scatter(
                             x=[prediction_time_timestamp, prediction_time_timestamp],
@@ -675,7 +794,9 @@ def run_app(cfg: DictConfig = None):
                             name=task_name + f" {row['prediction_time']}",
                             yaxis="y2",
                         )
-                        fig_subject_codes.update_layout(yaxis2=dict(showticklabels=False))
+                        fig_subject_codes.update_layout(
+                            yaxis2=dict(showticklabels=False)
+                        )
 
         return fig_subject_codes, task_options, ""
 

@@ -10,7 +10,7 @@
 [![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/rvandewater/MEDS-Inspect#license)
 [![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/rvandewater/MEDS-Inspect/pulls)
 [![contributors](https://img.shields.io/github/contributors/rvandewater/MEDS-Inspect.svg)](https://github.com/rvandewater/MEDS-Inspect/graphs/contributors)
-[![DOI](https://zenodo.org/badge/918107518.svg)](https://doi.org/10.5281/zenodo.14891939)
+[![DOI](https://zenodo.org/badge/914776878.svg)](https://doi.org/10.5281/zenodo.14892253)
 
 MEDS (Medical Event Data Standard) is "the simplest possible standard for health AI" (https://medical-event-data-standard.github.io/).
 
@@ -80,6 +80,8 @@ You can start the caching directly from the command line. Caching creates the fo
 python MEDS_Inspect_cache path/to/your/favorite/meds/dataset
 ```
 
-!\[ note: you need to input the directory with your /data and /metadata folder `/sicdb/MEDS_cohort`\]
+> [!NOTE]
+> you need to input the directory with your /data and /metadata folder, for example: `/sicdb/MEDS_cohort`\\
+
 Impression:
 ![Screenshot 2025-01-13 at 11-53-07 MEDS INSPECT](https://github.com/user-attachments/assets/03b81fdd-689c-4151-a522-b5b52db74e66)

@@ -77,7 +77,7 @@ def run_app(cfg: DictConfig = None):
         children=[
             html.Div(
                 children=html.Img(
-                    src="https://github.com/rvandewater/MEDS-Inspect/blob/main/assets/meds_inspect_logo.svg",
+                    src="/assets/meds_inspect_logo.svg",
                     style={"width": "200px"},
                 ),
                 style={"textAlign": "center"},

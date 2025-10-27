@@ -11,6 +11,7 @@ from omegaconf import DictConfig
 from .cache.cache_results import cache_results, get_metadata
 from .code_search import load_code_metadata, search_codes
 from .utils import is_valid_path, return_data_path
+import math
 
 package_name = "MEDS_Inspect"
 sample_data_path = None
@@ -654,9 +655,51 @@ def run_app(cfg: DictConfig = None):
 
         code_metadata = load_code_metadata(file_path + "/metadata/codes.parquet")
         results = search_codes(code_metadata, search_term, search_options)
+        num_rows = 0
+        half = 0
         if len(results) == 0:
             return "No results found."
+        else:
+            num_rows = len(results)
+            half = math.ceil(num_rows / 2)
+            rows_left = [
+                html.Tr(
+                    [html.Td(results[col].to_list()[i]) for col in results.columns],
+                    style={"backgroundColor": "#f2f2f2"} if i % 2 == 0 else {},
+                )
+                for i in range(half)
+            ]
+            rows_right = [
+                html.Tr(
+                    [html.Td(results[col].to_list()[i]) for col in results.columns],
+                    style={"backgroundColor": "#f2f2f2"} if i % 2 == 0 else {},
+                )
+                for i in range(half, num_rows)
+            ]
 
+            table_left = html.Table(
+                [
+                    html.Thead(html.Tr([html.Th(col) for col in results.columns])),
+                    html.Tbody(rows_left),
+                ],
+                style={
+                    "width": "48%",
+                    "display": "inline-block",
+                    "verticalAlign": "top",
+                },
+            )
+            table_right = html.Table(
+                [
+                    html.Thead(html.Tr([html.Th(col) for col in results.columns])),
+                    html.Tbody(rows_right),
+                ],
+                style={
+                    "width": "48%",
+                    "display": "inline-block",
+                    "verticalAlign": "top",
+                    "marginLeft": "4%",
+                },
+            )
         return [
             html.Tbody(
                 [
@@ -667,21 +710,9 @@ def run_app(cfg: DictConfig = None):
                     )
                 ]
             ),
-            html.Table(
-                [
-                    html.Thead(html.Tr([html.Th(col) for col in results.columns])),
-                    html.Tbody(
-                        [
-                            html.Tr(
-                                [
-                                    html.Td(results[col].to_list()[i])
-                                    for col in results.columns
-                                ]
-                            )
-                            for i in range(len(results))
-                        ]
-                    ),
-                ]
+            html.Div(
+                [table_left, table_right],
+                style={"display": "flex", "justifyContent": "space-between"},
             ),
         ]
 

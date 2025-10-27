@@ -36,7 +36,7 @@ pip install MEDS-Inspect
 Then start a server with the following:
 
 ```bash
-MEDS_Inspect --port=8060 --file_path="path/to/your/meds/dataset"
+MEDS_Inspect port=8052 +initial_path="path/to/your/meds/dataset"
 ```
 
 This will start a local web app that you can access in your browser. Running this command without a file path will

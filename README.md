@@ -80,5 +80,6 @@ You can start the caching directly from the command line. Caching creates the fo
 python MEDS_Inspect_cache path/to/your/favorite/meds/dataset
 ```
 
+!\[ note: you need to input the directory with your /data and /metadata folder `/sicdb/MEDS_cohort`\]
 Impression:
 ![Screenshot 2025-01-13 at 11-53-07 MEDS INSPECT](https://github.com/user-attachments/assets/03b81fdd-689c-4151-a522-b5b52db74e66)

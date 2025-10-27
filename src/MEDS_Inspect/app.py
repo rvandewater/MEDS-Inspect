@@ -65,7 +65,10 @@ def run_app(cfg: DictConfig = None):
     top_codes = cached_results["top_codes"]
     coding_dict = cached_results["coding_dict"]
     numerical_code_data = cached_results["numerical_code_data"]
-    if len(coding_dict) > cfg.limits.subject_ids:
+    if (
+        len(cached_results["code_count_subjects"]["Subject ID"])
+        > cfg.limits.subject_ids
+    ):
         subject_ids = cached_results["code_count_subjects"]["Subject ID"].to_list()
     else:
         subject_ids = None
@@ -283,6 +286,16 @@ def run_app(cfg: DictConfig = None):
                         ],
                         value="",
                         placeholder="Select histogram normalization",
+                    ),
+                    html.P(children="Select the scale:"),
+                    dcc.Dropdown(
+                        id="scale-dropdown",
+                        options=[
+                            {"label": "Linear", "value": "linear"},
+                            {"label": "Log", "value": "log"},
+                        ],
+                        value="linear",
+                        placeholder="Select scale",
                     ),
                     html.P(children="Adjust the number of bins."),
                     dcc.Slider(
@@ -610,8 +623,9 @@ def run_app(cfg: DictConfig = None):
         Output("fig_code_count_subject", "figure"),
         Input("bins-slider", "value"),
         Input("histnorm-dropdown", "value"),
+        Input("scale-dropdown", "value"),
     )
-    def update_code_count_subject(bins, histnorm):
+    def update_code_count_subject(bins, histnorm, scale):
         fig_code_count_subject = px.histogram(
             code_count_subject,
             y="Subject ID",
@@ -620,6 +634,7 @@ def run_app(cfg: DictConfig = None):
             histnorm=histnorm,
             # title="Code count distribution per subject",
             nbins=bins,
+            log_y=True if scale == "log" else False,
         ).update_layout(yaxis_title="Segment of Subjects")
         return fig_code_count_subject
 
@@ -703,22 +718,42 @@ def run_app(cfg: DictConfig = None):
         n_clicks, subject_id, file_path, selected_task
     ):
         if file_path:
-            tasks_path = os.path.join(file_path, "tasks")
+            tasks_path = (
+                os.path.join(file_path, "tasks")
+                if os.path.isdir(os.path.join(file_path, "tasks"))
+                else (os.path.join(file_path, "labels"))
+            )
             if os.path.isdir(tasks_path):
-                detected_tasks = [
-                    f
-                    for f in os.listdir(tasks_path)
-                    if os.path.isfile(os.path.join(tasks_path, f))
-                    or os.path.isdir(os.path.join(tasks_path, f))
-                ]
+                detected_tasks = []
+                for root, dirs, files in os.walk(tasks_path):
+                    subfolders = set(dirs)
+                    if {"train", "test", "val"} & subfolders:
+                        rel_path = os.path.relpath(root, tasks_path)
+                        detected_tasks.append(rel_path)
                 task_options = [
-                    {"label": os.path.splitext(task)[0], "value": task}
-                    for task in detected_tasks
+                    {"label": task, "value": task} for task in detected_tasks
                 ]
             else:
                 task_options = []
         else:
             task_options = []
+        # if file_path:
+        #     tasks_path = os.path.join(file_path, "tasks")
+        #     if os.path.isdir(tasks_path):
+        #         detected_tasks = [
+        #             f
+        #             for f in os.listdir(tasks_path)
+        #             if os.path.isfile(os.path.join(tasks_path, f))
+        #             or os.path.isdir(os.path.join(tasks_path, f))
+        #         ]
+        #         task_options = [
+        #             {"label": os.path.splitext(task)[0], "value": task}
+        #             for task in detected_tasks
+        #         ]
+        #     else:
+        #         task_options = []
+        # else:
+        #     task_options = []
 
         if n_clicks == 0:
             return go.Figure(), task_options, ""
@@ -754,10 +789,11 @@ def run_app(cfg: DictConfig = None):
             hover_data={"code": True, "numeric_value": True, "text_value": True},
         )
 
-        if selected_task:
-            task_file_path = os.path.join(file_path, "tasks", selected_task)
+        if selected_task and tasks_path and os.path.isdir(tasks_path):
+            # task_file_path = os.path.join(file_path, "tasks", selected_task)
+            task_file_path = os.path.join(tasks_path, selected_task)
             if os.path.isfile(task_file_path) or os.path.isdir(task_file_path):
-                task_data = pl.scan_parquet(task_file_path)
+                task_data = pl.scan_parquet(task_file_path + "/**/*.parquet")
                 task_label = task_data.filter(
                     pl.col("subject_id") == subject_id
                 ).collect()

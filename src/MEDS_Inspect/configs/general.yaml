@@ -6,6 +6,6 @@ app:
   title: "MEDS INSPECT"
   suppress_callback_exceptions: true
 limits:
-  subject_ids: 100
+  subject_ids: 101
   coding_dict: 1000
   search_results: 1000

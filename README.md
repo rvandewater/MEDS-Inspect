@@ -44,6 +44,15 @@ default to the MIMIC-IV Demo data in MEDS
 
 You should also be able to enter an arbitrary filepath from the GUI.
 
+On HPC systems you might need to forward the port, for example with SSH tunneling:
+
+```bash
+ssh -N -f -L localhost:8090:localhost:8090 remote_user@remote_host
+```
+
+Then access the app at `localhost:8090` in your browser. For any problems, please refer to your
+system administrator.
+
 ## Getting started (development)
 
 Clone repository:
